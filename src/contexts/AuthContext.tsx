@@ -96,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = localStorage.getItem('user');
 
         if (token && userData) {
-          const user = JSON.parse(userData);
           // 验证token是否有效
           try {
             const profile = await apiService.getProfile();
@@ -178,9 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
-  };
 
   const contextValue: AuthContextType = {
     user: state.user,
