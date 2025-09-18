@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  Divider,
 } from '@mui/material';
 import {
   Send,
@@ -19,6 +20,77 @@ import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { FrontendMessage } from '../types';
 
+// 日期格式化工具函数
+const formatMessageDate = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isToday = date.toDateString() === today.toDateString();
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+  if (isToday) {
+    return '今天';
+  } else if (isYesterday) {
+    return '昨天';
+  } else {
+    return date.toLocaleDateString('zh-CN', {
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+};
+
+const formatMessageTime = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+// 检查是否需要显示日期分割线
+const shouldShowDateSeparator = (currentMessage: FrontendMessage, previousMessage?: FrontendMessage): boolean => {
+  if (!previousMessage) return true;
+  
+  const currentDate = new Date(currentMessage.timestamp).toDateString();
+  const previousDate = new Date(previousMessage.timestamp).toDateString();
+  
+  return currentDate !== previousDate;
+};
+
+// 日期分割线组件
+const DateSeparator: React.FC<{ timestamp: string }> = ({ timestamp }) => {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        my: 3,
+        px: 2,
+      }}
+    >
+      <Divider sx={{ flex: 1 }} />
+      <Typography
+        variant="caption"
+        sx={{
+          mx: 2,
+          px: 2,
+          py: 0.5,
+          backgroundColor: 'action.hover',
+          borderRadius: 2,
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+        }}
+      >
+        {formatMessageDate(timestamp)}
+      </Typography>
+      <Divider sx={{ flex: 1 }} />
+    </Box>
+  );
+};
+
 interface MessageItemProps {
   message: FrontendMessage;
   isOwn: boolean;
@@ -26,20 +98,12 @@ interface MessageItemProps {
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar }) => {
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: isOwn ? 'row-reverse' : 'row',
-        mb: 1,
+        mb: 1.5,
         alignItems: 'flex-end',
         gap: 1,
       }}
@@ -60,7 +124,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar })
       {showAvatar && isOwn && <Box sx={{ width: 32 }} />}
       {!showAvatar && <Box sx={{ width: 40 }} />}
 
-      {/* 消息内容 */}
+      {/* 消息内容区域 */}
       <Box
         sx={{
           maxWidth: '70%',
@@ -69,53 +133,71 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar })
           alignItems: isOwn ? 'flex-end' : 'flex-start',
         }}
       >
-        {/* 发送者名称（非自己的消息） */}
+        {/* 发送者名称（非自己的消息）*/}
         {showAvatar && !isOwn && (
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ mb: 0.5, ml: 1 }}
+            sx={{ mb: 0.5, ml: 1, fontSize: '0.7rem' }}
           >
             {message.user.username}
           </Typography>
         )}
 
-        {/* 消息气泡 */}
-        <Paper
-          elevation={1}
+        {/* 消息气泡和时间 */}
+        <Box
           sx={{
-            p: 1.5,
-            borderRadius: 3,
-            background: isOwn
-              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-              : 'background.paper',
-            color: isOwn ? 'white' : 'text.primary',
-            position: 'relative',
-            border: isOwn ? 'none' : '1px solid',
-            borderColor: 'divider',
-            maxWidth: '100%',
-            wordBreak: 'break-word',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 1,
+            flexDirection: isOwn ? 'row-reverse' : 'row',
           }}
         >
-          <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
-            {message.content}
-          </Typography>
+          {/* 消息气泡 */}
+          <Paper
+            elevation={1}
+            sx={{
+              p: 1.5,
+              borderRadius: 1.5, // 减小圆角
+              background: isOwn
+                ? '#07C160' // 微信绿色
+                : '#FFFFFF',
+              color: isOwn ? 'white' : 'text.primary',
+              position: 'relative',
+              border: isOwn ? 'none' : '1px solid #E5E5E5',
+              maxWidth: '100%',
+              wordBreak: 'break-word',
+              // 添加微信风格的阴影
+              boxShadow: isOwn 
+                ? '0 2px 8px rgba(7, 193, 96, 0.15)'
+                : '0 2px 4px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                lineHeight: 1.4,
+                fontSize: '0.9rem', // 调整字体大小
+              }}
+            >
+              {message.content}
+            </Typography>
+          </Paper>
           
-          {/* 时间戳 */}
+          {/* 时间显示 */}
           <Typography
             variant="caption"
             sx={{
-              opacity: 0.7,
+              color: 'text.secondary',
               fontSize: '0.7rem',
-              mt: 0.5,
-              display: 'block',
-              textAlign: isOwn ? 'right' : 'left',
+              opacity: 0.8,
+              minWidth: 'fit-content',
+              whiteSpace: 'nowrap',
             }}
           >
-            {formatTime(message.timestamp)}
-            {message.edited && ' (已编辑)'}
+            {formatMessageTime(message.timestamp)}
           </Typography>
-        </Paper>
+        </Box>
       </Box>
     </Box>
   );
@@ -159,9 +241,9 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
       sx={{
         p: 2,
         m: 2,
-        borderRadius: 3,
-        border: '1px solid',
-        borderColor: 'divider',
+        borderRadius: 2, // 减小圆角
+        border: '1px solid #E5E5E5',
+        backgroundColor: '#FAFAFA',
       }}
     >
       <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', gap: 1 }}>
@@ -178,9 +260,16 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
+              borderRadius: 1.5, // 减小圆角
+              backgroundColor: 'white',
               '& fieldset': {
-                border: 'none',
+                borderColor: '#E5E5E5',
+              },
+              '&:hover fieldset': {
+                borderColor: '#07C160', // 微信绿色
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#07C160', // 微信绿色
               },
             },
           }}
@@ -191,7 +280,13 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
           <IconButton
             size="small"
             disabled={disabled}
-            sx={{ alignSelf: 'flex-end' }}
+            sx={{ 
+              alignSelf: 'flex-end',
+              color: 'text.secondary',
+              '&:hover': {
+                color: '#07C160', // 微信绿色
+              },
+            }}
           >
             <EmojiEmotions />
           </IconButton>
@@ -203,15 +298,15 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
             type="submit"
             disabled={!message.trim() || sending || disabled}
             sx={{
-              bgcolor: 'primary.main',
+              bgcolor: '#07C160', // 微信绿色
               color: 'white',
               alignSelf: 'flex-end',
               '&:hover': {
-                bgcolor: 'primary.dark',
+                bgcolor: '#06A050', // 深一点的绿色
               },
               '&:disabled': {
-                bgcolor: 'action.disabledBackground',
-                color: 'action.disabled',
+                bgcolor: '#E5E5E5',
+                color: '#BDBDBD',
               },
             }}
           >
@@ -341,14 +436,27 @@ const ChatMessages: React.FC = () => {
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            {messages.map((message, index) => (
-              <MessageItem
-                key={message.id}
-                message={message}
-                isOwn={message.user.id === user?.id}
-                showAvatar={shouldShowAvatar(message, index)}
-              />
-            ))}
+            {messages.map((message, index) => {
+              const previousMessage = index > 0 ? messages[index - 1] : undefined;
+              const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+              const showAvatar = shouldShowAvatar(message, index);
+              
+              return (
+                <React.Fragment key={message.id}>
+                  {/* 日期分割线 */}
+                  {showDateSeparator && (
+                    <DateSeparator timestamp={message.timestamp} />
+                  )}
+                  
+                  {/* 消息项 */}
+                  <MessageItem
+                    message={message}
+                    isOwn={message.user.id === user?.id}
+                    showAvatar={showAvatar}
+                  />
+                </React.Fragment>
+              );
+            })}
             <div ref={messagesEndRef} />
           </Box>
         )}
