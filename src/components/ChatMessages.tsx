@@ -50,7 +50,7 @@ const formatMessageTime = (timestamp: string): string => {
   });
 };
 
-// 检查是否需要显示日期分割线
+// Check if date separator should be shown
 const shouldShowDateSeparator = (currentMessage: FrontendMessage, previousMessage?: FrontendMessage): boolean => {
   if (!previousMessage) return true;
   
@@ -60,7 +60,7 @@ const shouldShowDateSeparator = (currentMessage: FrontendMessage, previousMessag
   return currentDate !== previousDate;
 };
 
-// 日期分割线组件
+// Date separator component
 const DateSeparator: React.FC<{ timestamp: string }> = ({ timestamp }) => {
   return (
     <Box
@@ -94,35 +94,31 @@ const DateSeparator: React.FC<{ timestamp: string }> = ({ timestamp }) => {
 interface MessageItemProps {
   message: FrontendMessage;
   isOwn: boolean;
-  showAvatar: boolean;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: isOwn ? 'row-reverse' : 'row',
-        mb: 1.5,
-        alignItems: 'flex-end',
-        gap: 1,
+        mb: 2.5, // 增加消息间距
+        alignItems: 'flex-start', // 改为顶部对齐
+        gap: 1.5, // 增加间距
       }}
     >
-      {/* 头像 */}
-      {showAvatar && !isOwn && (
-        <Avatar
-          sx={{
-            width: 32,
-            height: 32,
-            bgcolor: 'primary.main',
-            fontSize: '0.875rem',
-          }}
-        >
-          {message.user.username.charAt(0).toUpperCase()}
-        </Avatar>
-      )}
-      {showAvatar && isOwn && <Box sx={{ width: 32 }} />}
-      {!showAvatar && <Box sx={{ width: 40 }} />}
+      {/* 头像 - 每条消息都显示 */}
+      <Avatar
+        sx={{
+          width: 36, // 稍微增大头像
+          height: 36,
+          bgcolor: 'primary.main',
+          fontSize: '0.875rem',
+          mt: 0.5, // 稍微向下偏移对齐用户名
+        }}
+      >
+        {message.user.username.charAt(0).toUpperCase()}
+      </Avatar>
 
       {/* 消息内容区域 */}
       <Box
@@ -133,16 +129,19 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar })
           alignItems: isOwn ? 'flex-end' : 'flex-start',
         }}
       >
-        {/* 发送者名称（非自己的消息）*/}
-        {showAvatar && !isOwn && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mb: 0.5, ml: 1, fontSize: '0.7rem' }}
-          >
-            {message.user.username}
-          </Typography>
-        )}
+        {/* 用户名 - 每条消息都显示 */}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ 
+            mb: 0.5, 
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            px: 0.5, // 添加水平边距
+          }}
+        >
+          {message.user.username}
+        </Typography>
 
         {/* 消息气泡和时间 */}
         <Box
@@ -158,16 +157,15 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar })
             elevation={1}
             sx={{
               p: 1.5,
-              borderRadius: 1.5, // 减小圆角
+              borderRadius: 1.5,
               background: isOwn
-                ? '#07C160' // 微信绿色
+                ? '#07C160' // WeChat green
                 : '#FFFFFF',
               color: isOwn ? 'white' : 'text.primary',
               position: 'relative',
               border: isOwn ? 'none' : '1px solid #E5E5E5',
               maxWidth: '100%',
               wordBreak: 'break-word',
-              // 添加微信风格的阴影
               boxShadow: isOwn 
                 ? '0 2px 8px rgba(7, 193, 96, 0.15)'
                 : '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -177,7 +175,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn, showAvatar })
               variant="body2" 
               sx={{ 
                 lineHeight: 1.4,
-                fontSize: '0.9rem', // 调整字体大小
+                fontSize: '0.9rem',
               }}
             >
               {message.content}
@@ -241,7 +239,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
       sx={{
         p: 2,
         m: 2,
-        borderRadius: 2, // 减小圆角
+        borderRadius: 2, // Reduced border radius
         border: '1px solid #E5E5E5',
         backgroundColor: '#FAFAFA',
       }}
@@ -260,22 +258,22 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: 1.5, // 减小圆角
+              borderRadius: 1.5, // Reduced border radius
               backgroundColor: 'white',
               '& fieldset': {
                 borderColor: '#E5E5E5',
               },
               '&:hover fieldset': {
-                borderColor: '#07C160', // 微信绿色
+                borderColor: '#07C160', // WeChat green
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#07C160', // 微信绿色
+                borderColor: '#07C160', // WeChat green
               },
             },
           }}
         />
         
-        {/* 表情按钮（预留） */}
+        {/* Emoji button (reserved) */}
         <Tooltip title="表情">
           <IconButton
             size="small"
@@ -284,7 +282,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
               alignSelf: 'flex-end',
               color: 'text.secondary',
               '&:hover': {
-                color: '#07C160', // 微信绿色
+                color: '#07C160', // WeChat green
               },
             }}
           >
@@ -298,11 +296,11 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
             type="submit"
             disabled={!message.trim() || sending || disabled}
             sx={{
-              bgcolor: '#07C160', // 微信绿色
+              bgcolor: '#07C160', // WeChat green
               color: 'white',
               alignSelf: 'flex-end',
               '&:hover': {
-                bgcolor: '#06A050', // 深一点的绿色
+                bgcolor: '#06A050', // Darker green
               },
               '&:disabled': {
                 bgcolor: '#E5E5E5',
@@ -332,22 +330,6 @@ const ChatMessages: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // 判断是否显示头像（连续消息合并显示）
-  const shouldShowAvatar = (message: FrontendMessage, index: number): boolean => {
-    if (!messages || messages.length === 0) return true;
-    if (index === messages.length - 1) return true;
-    
-    const nextMessage = messages[index + 1];
-    if (!nextMessage) return true;
-    
-    // 不同用户的消息
-    if (message.user.id !== nextMessage.user.id) return true;
-    
-    // 时间间隔超过5分钟
-    const timeDiff = new Date(nextMessage.timestamp).getTime() - new Date(message.timestamp).getTime();
-    return timeDiff > 5 * 60 * 1000; // 5分钟
-  };
 
   if (!currentRoom) {
     return (
@@ -439,20 +421,18 @@ const ChatMessages: React.FC = () => {
             {messages.map((message, index) => {
               const previousMessage = index > 0 ? messages[index - 1] : undefined;
               const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
-              const showAvatar = shouldShowAvatar(message, index);
               
               return (
                 <React.Fragment key={message.id}>
-                  {/* 日期分割线 */}
+                  {/* Date separator - only show if messages are from different days */}
                   {showDateSeparator && (
                     <DateSeparator timestamp={message.timestamp} />
                   )}
                   
-                  {/* 消息项 */}
+                  {/* Message item */}
                   <MessageItem
                     message={message}
                     isOwn={message.user.id === user?.id}
-                    showAvatar={showAvatar}
                   />
                 </React.Fragment>
               );

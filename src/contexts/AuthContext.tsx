@@ -14,6 +14,7 @@ type AuthAction =
   | { type: 'LOGIN_START' }
   | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
   | { type: 'LOGIN_FAILURE'; payload: string }
+  | { type: 'LOGOUT_START' }
   | { type: 'LOGOUT' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'CLEAR_ERROR' };
@@ -51,6 +52,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
+      };
+    case 'LOGOUT_START':
+      return {
+        ...state,
+        isLoading: true,
+        error: null,
       };
     case 'LOGOUT':
       return {
@@ -138,11 +145,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    apiService.removeAuthToken();
-    dispatch({ type: 'LOGOUT' });
+  const logout = async () => {
+    dispatch({ type: 'LOGOUT_START' });
+    try {
+      // Call the logout API
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+      // Continue with logout even if API call fails
+    } finally {
+      // Clear local state regardless of API call result
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      apiService.removeAuthToken();
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   const refreshToken = async () => {

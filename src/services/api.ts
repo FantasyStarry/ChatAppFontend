@@ -91,6 +91,11 @@ class ApiService {
     return response.data;
   }
 
+  async logout(): Promise<{ message: string; user_id: number }> {
+    const response: AxiosResponse<{ message: string; user_id: number }> = await this.api.post('/logout');
+    return response.data;
+  }
+
   // 聊天室相关API
   async getChatRooms(): Promise<ChatRoom[]> {
     const response: AxiosResponse<ChatRoom[]> = await this.api.get('/chatrooms');

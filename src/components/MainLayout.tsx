@@ -13,6 +13,7 @@ import {
   Chip,
   useTheme,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -38,7 +39,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isLoading } = useAuth();
   const { isConnected, currentRoom } = useChat();
   
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -61,9 +62,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
-    logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Logout will continue even if there's an error
+    }
   };
 
   const handleUserManagement = () => {
@@ -208,14 +214,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 aria-controls="menu-appbar"
                 aria-haspopup="true"
                 onClick={handleMenuOpen}
-                color="inherit"
+                sx={{
+                  p: 0.5,
+                  border: 2,
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  '&:hover': {
+                    borderColor: 'rgba(255,255,255,0.8)',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  },
+                }}
               >
                 <Avatar
                   sx={{
-                    width: 32,
-                    height: 32,
-                    bgcolor: 'rgba(255,255,255,0.2)',
+                    width: 36,
+                    height: 36,
+                    bgcolor: 'rgba(255,255,255,0.9)',
+                    color: 'primary.main',
                     fontSize: '1rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    border: '2px solid rgba(255,255,255,0.2)',
                   }}
                 >
                   {user?.username?.charAt(0).toUpperCase()}
@@ -276,9 +294,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           设置
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-          <Logout sx={{ mr: 2 }} />
-          退出登录
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }} disabled={isLoading}>
+          {isLoading ? (
+            <CircularProgress size={16} sx={{ mr: 2 }} />
+          ) : (
+            <Logout sx={{ mr: 2 }} />
+          )}
+          {isLoading ? '正在退出...' : '退出登录'}
         </MenuItem>
       </Menu>
 

@@ -55,26 +55,24 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         rooms: action.payload,
       };
     case 'SET_MESSAGES':
+      // Sort messages by timestamp in ascending order (oldest first)
+      const sortedMessages = [...action.payload].sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
       return {
         ...state,
-        messages: action.payload,
+        messages: sortedMessages,
       };
     case 'ADD_MESSAGE':
-      // 检查是否已存在相同内容的消息（防止重复）
-      const exists = state.messages.some(msg => 
-        msg.content === action.payload.content && 
-        msg.userId === action.payload.userId &&
-        Math.abs(new Date(msg.timestamp).getTime() - new Date(action.payload.timestamp).getTime()) < 5000 // 5秒内的相同消息认为是重复
+      // Add new message and maintain chronological order
+      const newMessages = [...state.messages, action.payload];
+      const sortedNewMessages = newMessages.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
-      
-      if (exists) {
-        console.log('检测到重复消息，忽略:', action.payload);
-        return state;
-      }
       
       return {
         ...state,
-        messages: [...state.messages, action.payload],
+        messages: sortedNewMessages,
       };
     case 'UPDATE_MESSAGE':
       return {
