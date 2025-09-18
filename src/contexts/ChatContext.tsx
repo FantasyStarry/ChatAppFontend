@@ -4,6 +4,7 @@ import type {
   ChatContextType,
   ChatRoom,
   Message,
+  FrontendMessage,
   WebSocketMessage,
   PaginationParams,
   CreateChatRoomRequest,
@@ -14,7 +15,7 @@ import { useAuth } from './AuthContext';
 interface ChatState {
   currentRoom: ChatRoom | null;
   rooms: ChatRoom[];
-  messages: Message[];
+  messages: FrontendMessage[];
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
@@ -23,12 +24,13 @@ interface ChatState {
 type ChatAction =
   | { type: 'SET_CURRENT_ROOM'; payload: ChatRoom | null }
   | { type: 'SET_ROOMS'; payload: ChatRoom[] }
-  | { type: 'SET_MESSAGES'; payload: Message[] }
-  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'SET_MESSAGES'; payload: FrontendMessage[] }
+  | { type: 'ADD_MESSAGE'; payload: FrontendMessage }
+  | { type: 'UPDATE_MESSAGE'; payload: { tempId: number; newMessage: FrontendMessage } }
   | { type: 'SET_CONNECTED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'PREPEND_MESSAGES'; payload: Message[] };
+  | { type: 'PREPEND_MESSAGES'; payload: FrontendMessage[] };
 
 const initialState: ChatState = {
   currentRoom: null,
@@ -58,9 +60,28 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         messages: action.payload,
       };
     case 'ADD_MESSAGE':
+      // 检查是否已存在相同内容的消息（防止重复）
+      const exists = state.messages.some(msg => 
+        msg.content === action.payload.content && 
+        msg.userId === action.payload.userId &&
+        Math.abs(new Date(msg.timestamp).getTime() - new Date(action.payload.timestamp).getTime()) < 5000 // 5秒内的相同消息认为是重复
+      );
+      
+      if (exists) {
+        console.log('检测到重复消息，忽略:', action.payload);
+        return state;
+      }
+      
       return {
         ...state,
         messages: [...state.messages, action.payload],
+      };
+    case 'UPDATE_MESSAGE':
+      return {
+        ...state,
+        messages: state.messages.map(msg => 
+          msg.id === action.payload.tempId ? action.payload.newMessage : msg
+        ),
       };
     case 'PREPEND_MESSAGES':
       return {
@@ -94,6 +115,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const socketRef = React.useRef<ReconnectingWebSocket | null>(null);
 
+  // Helper method to convert backend message to frontend message
+  const convertMessageToFrontend = useCallback((backendMessage: Message): FrontendMessage => {
+    return {
+      id: backendMessage.id,
+      content: backendMessage.content,
+      chatroomId: backendMessage.chatroom_id,
+      userId: backendMessage.user_id,
+      user: backendMessage.user,
+      timestamp: backendMessage.created_at,
+      type: backendMessage.type,
+      edited: backendMessage.edited,
+      editedAt: backendMessage.editedAt,
+    };
+  }, []);
+
   // 加载聊天室列表
   const loadRooms = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -114,17 +150,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const loadMessages = useCallback(async (roomId: number, params?: PaginationParams) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      console.log('加载房间消息:', roomId, params); // 添加调试日志
       const response = await apiService.getMessages(roomId, params);
+      console.log('获取到消息响应:', response); // 添加调试日志
       
       if (params?.offset && params.offset > 0) {
         // 分页加载，添加到消息列表前面
         dispatch({ type: 'PREPEND_MESSAGES', payload: response.data });
       } else {
         // 首次加载或刷新
+        console.log('设置消息列表:', response.data); // 添加调试日志
         dispatch({ type: 'SET_MESSAGES', payload: response.data });
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || '加载消息失败';
+      console.error('加载消息错误:', error); // 添加调试日志
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -195,7 +235,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           const authMessage = {
             type: 'auth',
             token: token,
-            chatroomId: roomId
+            chatroom_id: roomId // Use backend field name
           };
           socketRef.current.send(JSON.stringify(authMessage));
         }
@@ -215,6 +255,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       socketRef.current.addEventListener('message', (event) => {
         try {
           const data: WebSocketMessage = JSON.parse(event.data);
+          console.log('收到WebSocket消息:', data); // 添加调试日志
           
           // 处理认证响应
           if (data.type === 'auth_response') {
@@ -230,7 +271,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           
           // 处理普通消息
           if (data.message) {
-            dispatch({ type: 'ADD_MESSAGE', payload: data.message });
+            console.log('收到新消息:', data.message); // 添加调试日志
+            const frontendMessage = convertMessageToFrontend(data.message);
+            console.log('转换后的消息:', frontendMessage); // 添加调试日志
+            
+            // 检查是否是自己发送的消息（通过用户ID和内容对比）
+            const isOwnMessage = frontendMessage.userId === user?.id;
+            console.log('是否为自己的消息:', isOwnMessage);
+            
+            // 如果不是自己的消息，或者是服务器确认的消息，就添加到列表
+            dispatch({ type: 'ADD_MESSAGE', payload: frontendMessage });
           }
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -245,18 +295,45 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // 发送消息
   const sendMessage = useCallback(async (content: string) => {
-    if (!state.currentRoom || !socketRef.current || !user || socketRef.current.readyState !== WebSocket.OPEN) return;
+    if (!state.currentRoom || !socketRef.current || !user || socketRef.current.readyState !== WebSocket.OPEN) {
+      console.log('发送消息失败 - 条件检查:', {
+        currentRoom: !!state.currentRoom,
+        socket: !!socketRef.current,
+        user: !!user,
+        readyState: socketRef.current?.readyState
+      });
+      return;
+    }
 
     try {
+      console.log('准备发送消息:', { content, roomId: state.currentRoom.id, user });
+      
+      // 创建临时消息对象立即显示（乐观更新）
+      const tempMessage: FrontendMessage = {
+        id: Date.now(), // 临时ID，服务器会返回真正的ID
+        content,
+        chatroomId: state.currentRoom.id,
+        userId: user.id,
+        user: user,
+        timestamp: new Date().toISOString(),
+        type: 'text'
+      };
+      
+      // 立即添加到本地状态进行乐观更新
+      console.log('立即添加临时消息到本地状态:', tempMessage);
+      dispatch({ type: 'ADD_MESSAGE', payload: tempMessage });
+      
       // 根据 API 文档格式发送消息
       const message: WebSocketMessage = {
         type: 'message',
         content,
-        chatroomId: state.currentRoom.id,
+        chatroom_id: state.currentRoom.id, // Use backend field name
       };
 
+      console.log('通过WebSocket发送消息:', message);
       socketRef.current.send(JSON.stringify(message));
     } catch (error: any) {
+      console.error('发送消息出错:', error);
       const errorMessage = error.response?.data?.message || '发送消息失败';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;

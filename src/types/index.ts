@@ -41,6 +41,20 @@ export interface CreateChatRoomRequest {
 export interface Message {
   id: number;
   content: string;
+  chatroom_id: number;
+  user_id: number;
+  user: User;
+  created_at: string;
+  updated_at?: string;
+  type?: 'text' | 'system' | 'notification';
+  edited?: boolean;
+  editedAt?: string;
+}
+
+// Frontend-friendly message type for internal use
+export interface FrontendMessage {
+  id: number;
+  content: string;
   chatroomId: number;
   userId: number;
   user: User;
@@ -52,7 +66,7 @@ export interface Message {
 
 export interface SendMessageRequest {
   content: string;
-  chatroomId: number;
+  chatroom_id: number;
   type?: 'text';
 }
 
@@ -60,7 +74,8 @@ export interface SendMessageRequest {
 export interface WebSocketMessage {
   type: 'message' | 'user_joined' | 'user_left' | 'typing' | 'stop_typing' | 'auth' | 'auth_response';
   content?: string;
-  chatroomId: number;
+  chatroom_id?: number;
+  chatroomId?: number; // Keep for backwards compatibility
   user?: User;
   message?: Message;
   timestamp?: string;
@@ -117,7 +132,7 @@ export interface AuthContextType {
 export interface ChatContextType {
   currentRoom: ChatRoom | null;
   rooms: ChatRoom[];
-  messages: Message[];
+  messages: FrontendMessage[];
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
@@ -139,7 +154,7 @@ export interface ChatRoomListProps {
 }
 
 export interface MessageListProps {
-  messages: Message[];
+  messages: FrontendMessage[];
   currentUser: User | null;
   isLoading?: boolean;
 }

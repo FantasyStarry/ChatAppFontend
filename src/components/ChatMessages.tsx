@@ -17,10 +17,10 @@ import {
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
-import type { Message } from '../types';
+import type { FrontendMessage } from '../types';
 
 interface MessageItemProps {
-  message: Message;
+  message: FrontendMessage;
   isOwn: boolean;
   showAvatar: boolean;
 }
@@ -239,7 +239,7 @@ const ChatMessages: React.FC = () => {
   }, [messages]);
 
   // 判断是否显示头像（连续消息合并显示）
-  const shouldShowAvatar = (message: Message, index: number): boolean => {
+  const shouldShowAvatar = (message: FrontendMessage, index: number): boolean => {
     if (!messages || messages.length === 0) return true;
     if (index === messages.length - 1) return true;
     

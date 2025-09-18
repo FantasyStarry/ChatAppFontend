@@ -1,0 +1,30 @@
+{
+  "id": 1,
+  "content": "Welcome to the General chat room!",
+  "user_id": 1,
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "created_at": "2025-09-17T21:08:00.994596+08:00",
+    "updated_at": "2025-09-17T21:08:00.994596+08:00"
+  },
+  "chatroom_id": 1,
+  "chatroom": {
+    "id": 0,
+    "name": "",
+    "description": "",
+    "created_by": 0,
+    "creator": {
+      "id": 0,
+      "username": "",
+      "email": "",
+      "created_at": "0001-01-01T00:00:00Z",
+      "updated_at": "0001-01-01T00:00:00Z"
+    },
+    "created_at": "0001-01-01T00:00:00Z",
+    "updated_at": "0001-01-01T00:00:00Z"
+  },
+  "created_at": "2025-09-17T21:08:04.638253+08:00",
+  "updated_at": "2025-09-17T21:08:04.638253+08:00"
+}

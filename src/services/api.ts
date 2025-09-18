@@ -6,6 +6,7 @@ import type {
   ChatRoom,
   CreateChatRoomRequest,
   Message,
+  FrontendMessage,
   PaginationParams,
   PaginatedResponse,
   User,
@@ -59,6 +60,26 @@ class ApiService {
     }
   }
 
+  // Helper method to convert backend message to frontend message
+  private convertMessageToFrontend(backendMessage: Message): FrontendMessage {
+    return {
+      id: backendMessage.id,
+      content: backendMessage.content,
+      chatroomId: backendMessage.chatroom_id,
+      userId: backendMessage.user_id,
+      user: backendMessage.user,
+      timestamp: backendMessage.created_at,
+      type: backendMessage.type,
+      edited: backendMessage.edited,
+      editedAt: backendMessage.editedAt,
+    };
+  }
+
+  // Helper method to convert array of backend messages to frontend messages
+  private convertMessagesToFrontend(backendMessages: Message[]): FrontendMessage[] {
+    return backendMessages.map(message => this.convertMessageToFrontend(message));
+  }
+
   // 认证相关API
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response: AxiosResponse<AuthResponse> = await this.api.post('/login', credentials);
@@ -90,15 +111,50 @@ class ApiService {
   async getMessages(
     chatroomId: number,
     params?: PaginationParams
-  ): Promise<PaginatedResponse<Message>> {
+  ): Promise<PaginatedResponse<FrontendMessage>> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-    const response: AxiosResponse<PaginatedResponse<Message>> = await this.api.get(
+    console.log('发起API请求:', `/chatrooms/${chatroomId}/messages?${queryParams.toString()}`); // 添加调试日志
+    
+    const response: AxiosResponse<any> = await this.api.get(
       `/chatrooms/${chatroomId}/messages?${queryParams.toString()}`
     );
-    return response.data;
+    
+    console.log('原始API响应:', response.data); // 添加调试日志
+    
+    // 检查响应格式并处理
+    let backendMessages: Message[] = [];
+    
+    if (Array.isArray(response.data)) {
+      // 如果直接返回数组
+      backendMessages = response.data;
+    } else if (response.data && Array.isArray(response.data.data)) {
+      // 如果是分页格式
+      backendMessages = response.data.data;
+    } else if (response.data && response.data.id) {
+      // 如果返回单个消息对象
+      backendMessages = [response.data];
+    }
+    
+    console.log('提取到的消息:', backendMessages); // 添加调试日志
+    
+    // Convert backend messages to frontend format
+    const frontendMessages = this.convertMessagesToFrontend(backendMessages);
+    console.log('转换后的消息:', frontendMessages); // 添加调试日志
+    
+    // 返回统一的分页格式
+    const frontendData: PaginatedResponse<FrontendMessage> = {
+      data: frontendMessages,
+      total: frontendMessages.length,
+      page: 1,
+      limit: frontendMessages.length,
+      hasNext: false,
+      hasPrev: false
+    };
+    
+    return frontendData;
   }
 
   // 用户管理相关API（预留）
@@ -128,7 +184,7 @@ class ApiService {
     return response.data;
   }
 
-  // WebSocket连接URL
+  // WebSocket连接URL - Updated to use chatroom_id parameter
   getWebSocketUrl(chatroomId: number): string {
     return `${this.wsBaseURL}/${chatroomId}`;
   }
