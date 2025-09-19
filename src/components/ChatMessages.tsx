@@ -214,11 +214,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
 interface MessageInputProps {
   onSendMessage: (content: string) => Promise<void>;
   disabled?: boolean;
+  onOpenFileDrawer?: () => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   disabled,
+  onOpenFileDrawer,
 }) => {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -292,7 +294,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         <Tooltip title="附件">
           <IconButton
-            onClick={() => setFileDrawerOpen(true)}
+            onClick={onOpenFileDrawer}
             size="small"
             disabled={disabled}
             sx={{
@@ -571,7 +573,11 @@ const ChatMessages: React.FC = () => {
 
       {/* 输入区域 */}
       <Box sx={{ borderTop: 1, borderColor: "divider" }}>
-        <MessageInput onSendMessage={sendMessage} disabled={!isConnected} />
+        <MessageInput 
+          onSendMessage={sendMessage} 
+          disabled={!isConnected}
+          onOpenFileDrawer={() => setFileDrawerOpen(true)}
+        />
       </Box>
 
       {/* 文件面板 */}
