@@ -1,13 +1,30 @@
 import React, { useState, useCallback, useRef } from "react";
 import {
-  Upload,
-  X,
+  Box,
+  Paper,
+  Typography,
+  Button,
+  LinearProgress,
+  IconButton,
+  Card,
+  CardContent,
+  Avatar,
+  Chip,
+  Alert,
+  Stack,
+  Tooltip,
+} from "@mui/material";
+import {
+  CloudUpload,
+  Close,
   CheckCircle,
-  AlertCircle,
-  File,
-  Image,
-  FileText,
-} from "lucide-react";
+  Error as ErrorIcon,
+  InsertDriveFile,
+  Image as ImageIcon,
+  Description,
+  Refresh,
+  DeleteSweep,
+} from "@mui/icons-material";
 import type { FileUploadProgress, FileInfo } from "../types";
 import { apiService } from "../services/api";
 
@@ -26,7 +43,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onUploadError,
   maxFileSize = 50,
   allowedTypes = [],
-  className = "",
 }) => {
   const [uploadQueue, setUploadQueue] = useState<FileUploadProgress[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -37,10 +53,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // 获取文件图标
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) return <Image className="w-4 h-4" />;
+    const iconProps = { sx: { fontSize: 20 } };
+    
+    if (file.type.startsWith("image/")) 
+      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#07C160' }} />;
     if (file.type === "application/pdf" || file.type.startsWith("text/"))
-      return <FileText className="w-4 h-4" />;
-    return <File className="w-4 h-4" />;
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#2196f3' }} />;
+    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
   };
 
   // 格式化文件大小
@@ -54,12 +73,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // 验证文件
   const validateFile = (file: File): string | null => {
-    // 检查文件大小
     if (file.size > maxFileSize * 1024 * 1024) {
       return `文件大小不能超过 ${maxFileSize}MB`;
     }
 
-    // 检查文件类型
     if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
       return `不支持的文件类型: ${file.type}`;
     }
@@ -86,7 +103,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       setUploadQueue((prev) => [...prev, ...newUploads]);
 
-      // 开始上传有效文件
       newUploads.forEach((upload) => {
         if (upload.status === "pending") {
           startUpload(upload);
@@ -99,7 +115,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // 开始上传文件
   const startUpload = async (uploadItem: FileUploadProgress) => {
     try {
-      // 更新状态为上传中
       setUploadQueue((prev) =>
         prev.map((item) =>
           item.id === uploadItem.id
@@ -108,7 +123,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
 
-      // 执行上传
       const result = await apiService.uploadFile(
         uploadItem.file,
         chatroomId,
@@ -121,7 +135,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }
       );
 
-      // 上传成功
       setUploadQueue((prev) =>
         prev.map((item) =>
           item.id === uploadItem.id
@@ -130,14 +143,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
 
-      // 调用成功回调
       if (onUploadComplete) {
         onUploadComplete([result]);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
 
-      // 更新错误状态
       setUploadQueue((prev) =>
         prev.map((item) =>
           item.id === uploadItem.id
@@ -146,7 +157,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
 
-      // 调用错误回调
       if (onUploadError) {
         onUploadError(errorMessage);
       }
@@ -212,122 +222,230 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (e.target.files) {
       handleFiles(e.target.files);
     }
-    // 清空input值，允许重复选择同一文件
     e.target.value = "";
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* 上传区域 */}
-      <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-          isDragging
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-        }`}
+      <Paper
+        elevation={0}
+        sx={{
+          border: 2,
+          borderStyle: 'dashed',
+          borderColor: isDragging ? 'primary.main' : 'divider',
+          borderRadius: 2,
+          p: 6,
+          textAlign: 'center',
+          cursor: 'pointer',
+          bgcolor: isDragging ? 'primary.light' : 'grey.50',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            borderColor: 'primary.main',
+            bgcolor: 'grey.100',
+          },
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-gray-600 mb-2">点击选择文件或拖拽文件到此处</p>
-        <p className="text-sm text-gray-500">最大文件大小: {maxFileSize}MB</p>
+        <CloudUpload 
+          sx={{ 
+            fontSize: 48, 
+            color: isDragging ? 'primary.main' : 'text.disabled',
+            mb: 2 
+          }} 
+        />
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            color: 'text.primary', 
+            mb: 1,
+            fontWeight: 600,
+          }}
+        >
+          📁 拖拽文件到此处或点击选择
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            mb: 2,
+          }}
+        >
+          支持多文件同时上传
+        </Typography>
+        <Chip 
+          label={`最大文件大小: ${maxFileSize}MB`}
+          size="small"
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+            fontWeight: 500,
+          }}
+        />
         <input
           ref={fileInputRef}
           type="file"
           multiple
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={handleFileInputChange}
           accept={allowedTypes.length > 0 ? allowedTypes.join(",") : undefined}
         />
-      </div>
+      </Paper>
 
       {/* 上传队列 */}
       {uploadQueue.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <h4 className="font-medium text-gray-700">上传队列</h4>
-            <button
-              onClick={clearQueue}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              清空队列
-            </button>
-          </div>
+        <Card elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                📤 上传队列 ({uploadQueue.length})
+              </Typography>
+              <Button
+                startIcon={<DeleteSweep />}
+                onClick={clearQueue}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    bgcolor: 'error.main',
+                    color: 'white',
+                  },
+                }}
+              >
+                清空队列
+              </Button>
+            </Box>
 
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {uploadQueue.map((upload) => (
-              <div key={upload.id}>
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  {/* 文件图标 */}
-                  <div className="flex-shrink-0">
-                    {getFileIcon(upload.file)}
-                  </div>
+            <Stack spacing={2} sx={{ maxHeight: 300, overflowY: 'auto' }}>
+              {uploadQueue.map((upload) => (
+                <Card 
+                  key={upload.id}
+                  elevation={0}
+                  sx={{ 
+                    border: 1, 
+                    borderColor: 'divider',
+                    bgcolor: upload.status === 'completed' ? 'success.light' : 
+                             upload.status === 'error' ? 'error.light' : 'background.paper',
+                  }}
+                >
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {/* 文件图标 */}
+                      <Avatar sx={{ width: 40, height: 40, bgcolor: 'transparent' }}>
+                        {getFileIcon(upload.file)}
+                      </Avatar>
 
-                  {/* 文件信息 */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {upload.file.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatFileSize(upload.file.size)}
-                    </p>
-                  </div>
-
-                  {/* 状态显示 */}
-                  <div className="flex-shrink-0 flex items-center space-x-2">
-                    {upload.status === "uploading" && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
-                            style={{ width: `${upload.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {upload.progress}%
-                        </span>
-                      </div>
-                    )}
-
-                    {upload.status === "completed" && (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    )}
-
-                    {upload.status === "error" && (
-                      <div className="flex items-center space-x-1">
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                        <button
-                          onClick={() => retryUpload(upload)}
-                          className="text-xs text-blue-600 hover:underline"
+                      {/* 文件信息 */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: 500,
+                            color: 'text.primary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
                         >
-                          重试
-                        </button>
-                      </div>
+                          {upload.file.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {formatFileSize(upload.file.size)}
+                        </Typography>
+                      </Box>
+
+                      {/* 状态显示 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {upload.status === "uploading" && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 120 }}>
+                            <Box sx={{ flex: 1 }}>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={upload.progress}
+                                sx={{
+                                  height: 6,
+                                  borderRadius: 3,
+                                  '& .MuiLinearProgress-bar': {
+                                    borderRadius: 3,
+                                    bgcolor: 'primary.main',
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', minWidth: 35 }}>
+                              {upload.progress}%
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {upload.status === "completed" && (
+                          <Tooltip title="上传成功">
+                            <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                          </Tooltip>
+                        )}
+
+                        {upload.status === "error" && (
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Tooltip title={upload.error || "上传失败"}>
+                              <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                            </Tooltip>
+                            <Button
+                              size="small"
+                              startIcon={<Refresh />}
+                              onClick={() => retryUpload(upload)}
+                              sx={{
+                                minWidth: 'auto',
+                                fontSize: '0.75rem',
+                                color: 'primary.main',
+                              }}
+                            >
+                              重试
+                            </Button>
+                          </Stack>
+                        )}
+
+                        <IconButton
+                          size="small"
+                          onClick={() => removeUploadItem(upload.id)}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                              bgcolor: 'error.main',
+                              color: 'white',
+                            },
+                          }}
+                        >
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+
+                    {/* 错误信息 */}
+                    {upload.error && (
+                      <Alert 
+                        severity="error" 
+                        sx={{ 
+                          mt: 2, 
+                          fontSize: '0.75rem',
+                          '& .MuiAlert-message': {
+                            fontSize: '0.75rem',
+                          },
+                        }}
+                      >
+                        {upload.error}
+                      </Alert>
                     )}
-
-                    <button
-                      onClick={() => removeUploadItem(upload.id)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 错误信息 */}
-                {upload.error && (
-                  <div className="ml-8 text-xs text-red-600 mt-1">
-                    {upload.error}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
       )}
-    </div>
+    </Box>
   );
 };
 

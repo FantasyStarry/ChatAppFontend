@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from "react";
 import {
-  X,
+  Box,
+  Dialog,
+  DialogContent,
+  Typography,
+  IconButton,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Alert,
+  Toolbar,
+  AppBar,
+  Tooltip,
+  Stack,
+} from "@mui/material";
+import {
+  Close,
   Download,
-  ExternalLink,
+  OpenInNew,
   ZoomIn,
   ZoomOut,
-  RotateCw,
-} from "lucide-react";
+  RotateRight,
+  Refresh,
+  RestartAlt,
+} from "@mui/icons-material";
 import type { FileInfo } from "../types";
 import { apiService } from "../services/api";
 
@@ -21,7 +39,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   file,
   onClose,
   onDownload,
-  className = "",
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +63,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       return "text";
     }
     return "unsupported";
+  };
+
+  // 获取文件类型标签和颜色
+  const getFileTypeInfo = (contentType: string) => {
+    if (contentType.startsWith("image/")) 
+      return { label: "图片", color: "success" as const };
+    if (contentType === "application/pdf") 
+      return { label: "PDF", color: "error" as const };
+    if (contentType.startsWith("text/")) 
+      return { label: "文本", color: "info" as const };
+    if (contentType.includes("document")) 
+      return { label: "文档", color: "info" as const };
+    return { label: "其他", color: "default" as const };
   };
 
   // 获取预览URL
@@ -117,181 +147,331 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const fileType = getFileType(file);
   const isPreviewable = fileType === "image" || fileType === "pdf";
+  const fileTypeInfo = getFileTypeInfo(file.content_type);
 
   return (
-    <div
-      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 ${className}`}
+    <Dialog
+      open={!!file}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{
+        sx: {
+          height: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 2,
+        },
+      }}
     >
-      <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full m-4 flex flex-col">
-        {/* 头部 */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
-              {file.file_name}
-            </h3>
-            <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-              <span>{formatFileSize(file.file_size)}</span>
-              <span>{file.content_type}</span>
-              <span>上传者: {file.uploader?.username || "未知"}</span>
-            </div>
-          </div>
+      {/* 头部工具栏 */}
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{ 
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Toolbar>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              📄 {file.file_name}
+            </Typography>
+            <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
+              <Chip
+                label={fileTypeInfo.label}
+                size="small"
+                color={fileTypeInfo.color}
+                sx={{ fontSize: '0.75rem' }}
+              />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {formatFileSize(file.file_size)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                上传者: {file.uploader?.username || "未知"}
+              </Typography>
+            </Stack>
+          </Box>
 
-          <div className="flex items-center space-x-2 ml-4">
+          {/* 工具按钮 */}
+          <Stack direction="row" spacing={1}>
             {/* 缩放控制 */}
             {isPreviewable && (
               <>
-                <button
-                  onClick={handleZoomOut}
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-                  title="缩小"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <span className="text-sm text-gray-600 min-w-[3rem] text-center">
-                  {zoom}%
-                </span>
-                <button
-                  onClick={handleZoomIn}
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-                  title="放大"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
+                <Tooltip title="缩小">
+                  <IconButton
+                    size="small"
+                    onClick={handleZoomOut}
+                    disabled={zoom <= 25}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <ZoomOut />
+                  </IconButton>
+                </Tooltip>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  minWidth: 50,
+                  justifyContent: 'center',
+                }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {zoom}%
+                  </Typography>
+                </Box>
+                <Tooltip title="放大">
+                  <IconButton
+                    size="small"
+                    onClick={handleZoomIn}
+                    disabled={zoom >= 300}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <ZoomIn />
+                  </IconButton>
+                </Tooltip>
               </>
             )}
 
             {/* 旋转控制 (仅图片) */}
             {fileType === "image" && (
-              <button
-                onClick={handleRotate}
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-                title="旋转"
-              >
-                <RotateCw className="w-4 h-4" />
-              </button>
+              <Tooltip title="旋转">
+                <IconButton
+                  size="small"
+                  onClick={handleRotate}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <RotateRight />
+                </IconButton>
+              </Tooltip>
             )}
 
             {/* 在新窗口打开 */}
             {previewUrl && (
-              <button
-                onClick={handleOpenInNewWindow}
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-                title="在新窗口打开"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
+              <Tooltip title="在新窗口打开">
+                <IconButton
+                  size="small"
+                  onClick={handleOpenInNewWindow}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <OpenInNew />
+                </IconButton>
+              </Tooltip>
             )}
 
             {/* 下载 */}
-            <button
-              onClick={handleDownload}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-              title="下载"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            <Tooltip title="下载文件">
+              <IconButton
+                size="small"
+                onClick={handleDownload}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    bgcolor: 'success.main',
+                    color: 'white',
+                  },
+                }}
+              >
+                <Download />
+              </IconButton>
+            </Tooltip>
 
             {/* 关闭 */}
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-              title="关闭"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* 内容区域 */}
-        <div className="flex-1 overflow-auto p-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2">加载中...</span>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <p className="text-red-600 mb-4">{error}</p>
-              <button
-                onClick={() => getPreviewUrl(file)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            <Tooltip title="关闭">
+              <IconButton
+                size="small"
+                onClick={onClose}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    bgcolor: 'error.main',
+                    color: 'white',
+                  },
+                }}
               >
-                重试
-              </button>
-            </div>
-          ) : !isPreviewable ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl text-gray-500">📄</span>
-              </div>
-              <p className="text-gray-600 mb-4">此文件类型不支持预览</p>
-              <button
+                <Close />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+
+      {/* 内容区域 */}
+      <DialogContent sx={{ flex: 1, p: 0, overflow: 'hidden' }}>
+        {loading ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100%',
+            gap: 2,
+          }}>
+            <CircularProgress sx={{ color: 'primary.main' }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              正在加载预览...
+            </Typography>
+          </Box>
+        ) : error ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100%',
+            p: 4,
+          }}>
+            <Alert 
+              severity="error" 
+              sx={{ mb: 3, maxWidth: 400 }}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  startIcon={<Refresh />}
+                  onClick={() => getPreviewUrl(file)}
+                >
+                  重试
+                </Button>
+              }
+            >
+              {error}
+            </Alert>
+          </Box>
+        ) : !isPreviewable ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100%',
+            p: 4,
+          }}>
+            <Card elevation={0} sx={{ border: 1, borderColor: 'divider', p: 4, textAlign: 'center' }}>
+              <Typography variant="h2" sx={{ mb: 2 }}>📄</Typography>
+              <Typography variant="h6" sx={{ color: 'text.primary', mb: 2 }}>
+                此文件类型不支持预览
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+                您可以下载文件后使用相应的应用程序打开
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Download />}
                 onClick={handleDownload}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                sx={{
+                  bgcolor: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                }}
               >
                 下载文件
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center">
-              {fileType === "image" && previewUrl && (
-                <div
-                  className="max-w-full max-h-full overflow-auto"
+              </Button>
+            </Card>
+          </Box>
+        ) : (
+          <Box sx={{ 
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'auto',
+            p: 2,
+          }}>
+            {fileType === "image" && previewUrl && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+              >
+                <img
+                  src={previewUrl}
+                  alt={file.file_name}
                   style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
                     transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                     transformOrigin: "center",
                     transition: "transform 0.2s ease",
+                    borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   }}
-                >
-                  <img
-                    src={previewUrl}
-                    alt={file.file_name}
-                    className="max-w-none"
-                    onError={() => setError("图片加载失败")}
-                  />
-                </div>
-              )}
-
-              {fileType === "pdf" && previewUrl && (
-                <div className="w-full h-full min-h-[500px]">
-                  <iframe
-                    src={previewUrl}
-                    title={file.file_name}
-                    className="w-full h-full border-0"
-                    style={{
-                      transform: `scale(${zoom / 100})`,
-                      transformOrigin: "top left",
-                      width: `${100 / (zoom / 100)}%`,
-                      height: `${100 / (zoom / 100)}%`,
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 底部信息 */}
-        <div className="border-t p-4 bg-gray-50">
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              上传时间: {new Date(file.uploaded_at).toLocaleString("zh-CN")}
-            </div>
-            {isPreviewable && (
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleResetZoom}
-                  className="text-blue-600 hover:underline"
-                >
-                  重置缩放
-                </button>
-                <span>使用鼠标滚轮可以缩放</span>
-              </div>
+                  onError={() => setError("图片加载失败")}
+                />
+              </Box>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+
+            {fileType === "pdf" && previewUrl && (
+              <Box sx={{ width: '100%', height: '100%', minHeight: 500 }}>
+                <iframe
+                  src={previewUrl}
+                  title={file.file_name}
+                  style={{
+                    border: 'none',
+                    borderRadius: 8,
+                    transform: `scale(${zoom / 100})`,
+                    transformOrigin: "top left",
+                    width: `${100 / (zoom / 100)}%`,
+                    height: `${100 / (zoom / 100)}%`,
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+
+      {/* 底部信息栏 */}
+      <Box sx={{ 
+        borderTop: 1, 
+        borderColor: 'divider',
+        bgcolor: 'grey.50',
+        p: 2,
+      }}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={2} 
+          justifyContent="space-between"
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            📅 上传时间: {new Date(file.uploaded_at).toLocaleString("zh-CN")}
+          </Typography>
+          {isPreviewable && (
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                size="small"
+                startIcon={<RestartAlt />}
+                onClick={handleResetZoom}
+                sx={{ 
+                  color: 'primary.main',
+                  fontSize: '0.75rem',
+                }}
+              >
+                重置缩放
+              </Button>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                💡 使用鼠标滚轮可以缩放
+              </Typography>
+            </Stack>
+          )}
+        </Stack>
+      </Box>
+    </Dialog>
   );
 };
 

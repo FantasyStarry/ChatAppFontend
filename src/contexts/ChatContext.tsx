@@ -434,6 +434,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         };
 
         console.log("通过WebSocket发送消息:", message);
+        console.log("当前房间ID:", state.currentRoom.id);
+        console.log("当前房间信息:", state.currentRoom);
         socketRef.current.send(JSON.stringify(message));
       } catch (error: unknown) {
         let errorMessage = "发送消息失败";

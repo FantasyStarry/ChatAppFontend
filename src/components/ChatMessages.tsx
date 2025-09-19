@@ -11,6 +11,7 @@ import {
   Tooltip,
   Divider,
   Drawer,
+  Button,
 } from "@mui/material";
 import {
   Send,
@@ -18,6 +19,7 @@ import {
   Schedule,
   AttachFile,
   Close,
+  CloudUpload,
 } from "@mui/icons-material";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
@@ -373,6 +375,11 @@ const ChatMessages: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [showUploadArea, setShowUploadArea] = useState(false);
 
+  // 拖拽上传状态
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragEnter, setIsDragEnter] = useState(false);
+  const dragCounter = useRef(0);
+
   // 自动滚动到底部
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -381,6 +388,84 @@ const ChatMessages: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 拖拽上传处理
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragEnter(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragEnter(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    setIsDragEnter(false);
+    dragCounter.current = 0;
+
+    if (!currentRoom) {
+      alert('请先选择一个聊天室');
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      // 打开文件上传区域并上传文件
+      setFileDrawerOpen(true);
+      setShowUploadArea(true);
+      
+      // 需要在 FileUpload 组件中处理这些文件
+      // 这里可以通过事件或者状态传递给 FileUpload 组件
+    }
+  };
+
+  // 粘贴上传处理
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    if (!currentRoom) return;
+
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith('image/'));
+    
+    if (imageItems.length > 0) {
+      e.preventDefault();
+      
+      // 打开文件上传区域
+      setFileDrawerOpen(true);
+      setShowUploadArea(true);
+      
+      // 处理粘贴的图片
+      const files: File[] = [];
+      for (const item of imageItems) {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+      
+      // 这里可以通过事件或者状态传递给 FileUpload 组件
+      console.log('粘贴了图片:', files);
+    }
+  };
 
   // 文件相关处理函数
   const handleFileUploadComplete = async (files: FileInfo[]) => {
@@ -489,8 +574,44 @@ const ChatMessages: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.default",
+        position: "relative",
       }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onPaste={handlePaste}
+      tabIndex={0} // 使容器可以接收键盘事件
     >
+      {/* 拖拽覆盖层 */}
+      {isDragEnter && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: 'rgba(7, 193, 96, 0.1)',
+            border: '3px dashed #07C160',
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <CloudUpload sx={{ fontSize: 64, color: '#07C160', mb: 2 }} />
+          <Typography variant="h5" sx={{ color: '#07C160', fontWeight: 600, mb: 1 }}>
+            📁 拖放文件到这里
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            松开鼠标即可上传文件
+          </Typography>
+        </Box>
+      )}
       {/* 连接状态提示 */}
       {!isConnected && (
         <Alert
@@ -611,17 +732,34 @@ const ChatMessages: React.FC = () => {
         </Box>
 
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <button
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Button
+              variant={showUploadArea ? "contained" : "outlined"}
               onClick={() => setShowUploadArea(!showUploadArea)}
-              className={`px-3 py-1 text-sm rounded ${
-                showUploadArea
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              size="small"
+              startIcon={showUploadArea ? <Close /> : <CloudUpload />}
+              sx={{
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                minWidth: 120,
+                boxShadow: showUploadArea ? '0 2px 8px rgba(7, 193, 96, 0.25)' : 'none',
+                bgcolor: showUploadArea ? '#07C160' : 'transparent',
+                borderColor: showUploadArea ? '#07C160' : '#E0E0E0',
+                color: showUploadArea ? 'white' : 'text.primary',
+                '&:hover': {
+                  bgcolor: showUploadArea ? '#06A050' : 'rgba(7, 193, 96, 0.04)',
+                  borderColor: '#07C160',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(7, 193, 96, 0.2)',
+                },
+                transition: 'all 0.2s ease',
+              }}
             >
-              {showUploadArea ? "隐藏上传" : "上传文件"}
-            </button>
+              {showUploadArea ? "隐藏上传" : "📤 上传文件"}
+            </Button>
           </Box>
         </Box>
 

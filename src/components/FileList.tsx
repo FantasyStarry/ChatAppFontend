@@ -1,24 +1,50 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Search,
-  Filter,
+  Box,
+  Paper,
+  TextField,
+  IconButton,
+  Button,
+  Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Checkbox,
+  Typography,
+  Pagination,
+  Stack,
+  Tooltip,
+  Alert,
+  CircularProgress,
+  Avatar,
+  InputAdornment,
+} from "@mui/material";
+import {
+  Search as SearchIcon,
+  FilterList,
   Download,
-  Trash2,
-  Eye,
-  File,
-  Image,
-  FileText,
-  Archive,
-  CheckSquare,
-  Square,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+  Delete,
+  Visibility,
+  InsertDriveFile,
+  Image as ImageIcon,
+  Description,
+  Clear,
+  FilePresent,
+  FolderZip,
+} from "@mui/icons-material";
 import type { FileInfo, FileListParams, FileSearchFilters } from "../types";
 import { apiService } from "../services/api";
 
 interface FileListProps {
-  chatroomId?: number; // 如果提供，则显示特定聊天室的文件；否则显示所有文件
+  chatroomId?: number;
   onFilePreview?: (file: FileInfo) => void;
   onFileDownload?: (file: FileInfo) => void;
   onFileDelete?: (file: FileInfo) => void;
@@ -34,7 +60,6 @@ const FileList: React.FC<FileListProps> = ({
   onFileDelete,
   onBatchDownload,
   onBatchDelete,
-  className = "",
 }) => {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,27 +107,27 @@ const FileList: React.FC<FileListProps> = ({
 
   // 获取文件图标
   const getFileIcon = (file: FileInfo) => {
-    const iconClass = "w-5 h-5";
+    const iconProps = { sx: { fontSize: 20 } };
 
     if (file.content_type.startsWith("image/")) {
-      return <Image className={`${iconClass} text-green-500`} />;
+      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#07C160' }} />;
     }
     if (file.content_type === "application/pdf") {
-      return <FileText className={`${iconClass} text-red-500`} />;
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#f44336' }} />;
     }
     if (
       file.content_type.startsWith("text/") ||
       file.content_type.includes("document")
     ) {
-      return <FileText className={`${iconClass} text-blue-500`} />;
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#2196f3' }} />;
     }
     if (
       file.content_type.includes("zip") ||
       file.content_type.includes("rar")
     ) {
-      return <Archive className={`${iconClass} text-orange-500`} />;
+      return <FolderZip {...iconProps} sx={{ ...iconProps.sx, color: '#ff9800' }} />;
     }
-    return <File className={`${iconClass} text-gray-500`} />;
+    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
   };
 
   // 获取文件类型标签
@@ -114,6 +139,15 @@ const FileList: React.FC<FileListProps> = ({
     if (contentType.includes("zip") || contentType.includes("rar"))
       return "压缩包";
     return "其他";
+  };
+
+  // 获取文件类型颜色
+  const getFileTypeColor = (contentType: string): 'success' | 'error' | 'info' | 'warning' | 'default' => {
+    if (contentType.startsWith("image/")) return "success";
+    if (contentType === "application/pdf") return "error";
+    if (contentType.startsWith("text/") || contentType.includes("document")) return "info";
+    if (contentType.includes("zip") || contentType.includes("rar")) return "warning";
+    return "default";
   };
 
   // 加载文件列表
@@ -133,13 +167,11 @@ const FileList: React.FC<FileListProps> = ({
       };
 
       if (chatroomId) {
-        // 获取特定聊天室的文件
         const response = await apiService.getChatroomFiles(chatroomId, params);
         setFiles(response.files);
         setTotalFiles(response.total);
         setTotalPages(response.total_pages);
       } else {
-        // 获取用户的所有文件
         const response = await apiService.getMyFiles();
         setFiles(response);
         setTotalFiles(response.length);
@@ -153,7 +185,6 @@ const FileList: React.FC<FileListProps> = ({
     }
   }, [chatroomId, currentPage, pageSize, filters]);
 
-  // 初始加载和依赖更新时重新加载
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
@@ -197,16 +228,10 @@ const FileList: React.FC<FileListProps> = ({
     const selectedFilesList = files.filter((f) => selectedFiles.has(f.id));
 
     if (selectedFilesList.length === 0) {
-      alert("请选择要操作的文件");
       return;
     }
 
     if (action === "delete") {
-      const confirmed = window.confirm(
-        `确定要删除选中的 ${selectedFilesList.length} 个文件吗？`
-      );
-      if (!confirmed) return;
-
       if (onBatchDelete) {
         onBatchDelete(selectedFilesList);
       }
@@ -231,86 +256,134 @@ const FileList: React.FC<FileListProps> = ({
       case "download":
         onFileDownload?.(file);
         break;
-      case "delete": {
-        const confirmed = window.confirm(
-          `确定要删除文件 "${file.file_name}" 吗？`
-        );
-        if (confirmed) {
-          onFileDelete?.(file);
-        }
+      case "delete":
+        onFileDelete?.(file);
         break;
-      }
     }
   };
 
+  // 清除所有过滤器
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      fileType: "all",
+      uploaderId: null,
+      dateRange: { start: null, end: null },
+    });
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* 搜索和过滤器 */}
-      <div className="flex flex-col space-y-3">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* 搜索和过滤器区域 */}
+      <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
         {/* 搜索栏 */}
-        <div className="flex space-x-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="搜索文件名..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
+        <Box sx={{ display: 'flex', gap: 2, mb: showFilters ? 3 : 0 }}>
+          <TextField
+            fullWidth
+            placeholder="🔍 搜索文件名..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            size="medium"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'divider',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+              },
+            }}
+          />
+          <Button
+            variant="contained"
             onClick={handleSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            sx={{
+              bgcolor: 'primary.main',
+              minWidth: 100,
+              borderRadius: 2,
+              boxShadow: '0 2px 8px rgba(7, 193, 96, 0.2)',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                boxShadow: '0 4px 12px rgba(7, 193, 96, 0.3)',
+              },
+            }}
           >
             搜索
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<FilterList />}
             onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-1"
+            sx={{
+              minWidth: 120,
+              borderRadius: 2,
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': {
+                borderColor: 'primary.main',
+                bgcolor: 'primary.main',
+                color: 'white',
+              },
+            }}
           >
-            <Filter className="w-4 h-4" />
-            <span>过滤器</span>
-          </button>
-        </div>
+            过滤器
+          </Button>
+        </Box>
 
         {/* 过滤器面板 */}
-        {showFilters && (
-          <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 文件类型过滤 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  文件类型
-                </label>
-                <select
-                  value={filters.fileType}
-                  onChange={(e) =>
-                    applyFilters({
-                      fileType: e.target.value as
-                        | "all"
-                        | "image"
-                        | "document"
-                        | "other",
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="all">全部类型</option>
-                  <option value="image">图片</option>
-                  <option value="document">文档</option>
-                  <option value="other">其他</option>
-                </select>
-              </div>
+        <Collapse in={showFilters}>
+          <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mb: 2 }}>
+              <Box>
+                <FormControl fullWidth size="small">
+                  <InputLabel>文件类型</InputLabel>
+                  <Select
+                    value={filters.fileType}
+                    label="文件类型"
+                    onChange={(e) =>
+                      applyFilters({
+                        fileType: e.target.value as
+                          | "all"
+                          | "image"
+                          | "document"
+                          | "other",
+                      })
+                    }
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'divider',
+                      },
+                    }}
+                  >
+                    <MenuItem value="all">全部类型</MenuItem>
+                    <MenuItem value="image">图片</MenuItem>
+                    <MenuItem value="document">文档</MenuItem>
+                    <MenuItem value="other">其他</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
 
-              {/* 日期范围 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  开始日期
-                </label>
-                <input
+              <Box>
+                <TextField
+                  fullWidth
+                  label="开始日期"
                   type="date"
+                  size="small"
                   value={filters.dateRange.start || ""}
                   onChange={(e) =>
                     applyFilters({
@@ -320,16 +393,21 @@ const FileList: React.FC<FileListProps> = ({
                       },
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    },
+                  }}
                 />
-              </div>
+              </Box>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  结束日期
-                </label>
-                <input
+              <Box>
+                <TextField
+                  fullWidth
+                  label="结束日期"
                   type="date"
+                  size="small"
                   value={filters.dateRange.end || ""}
                   onChange={(e) =>
                     applyFilters({
@@ -339,197 +417,297 @@ const FileList: React.FC<FileListProps> = ({
                       },
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    },
+                  }}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setFilters({
-                    search: "",
-                    fileType: "all",
-                    uploaderId: null,
-                    dateRange: { start: null, end: null },
-                  });
-                  setSearchQuery("");
-                  setCurrentPage(1);
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<Clear />}
+                onClick={clearFilters}
+                size="small"
+                sx={{
+                  borderColor: 'divider',
+                  color: 'text.secondary',
+                  borderRadius: 2,
                 }}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 清除过滤器
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+              </Button>
+            </Box>
+          </Box>
+        </Collapse>
+      </Paper>
 
       {/* 批量操作栏 */}
       {selectedFiles.size > 0 && (
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-          <span className="text-sm text-blue-700">
-            已选择 {selectedFiles.size} 个文件
-          </span>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleBatchAction("download")}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center space-x-1"
-            >
-              <Download className="w-4 h-4" />
-              <span>下载</span>
-            </button>
-            <button
-              onClick={() => handleBatchAction("delete")}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center space-x-1"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>删除</span>
-            </button>
-          </div>
-        </div>
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: 2, 
+            bgcolor: '#e3f2fd',
+            borderRadius: 2,
+            border: 1,
+            borderColor: 'primary.main',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>
+              ✅ 已选择 {selectedFiles.size} 个文件
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Download />}
+                onClick={() => handleBatchAction("download")}
+                sx={{
+                  bgcolor: 'primary.main',
+                  borderRadius: 2,
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                }}
+              >
+                批量下载
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="error"
+                startIcon={<Delete />}
+                onClick={() => handleBatchAction("delete")}
+                sx={{
+                  borderRadius: 2,
+                }}
+              >
+                批量删除
+              </Button>
+            </Stack>
+          </Box>
+        </Paper>
       )}
 
       {/* 文件列表 */}
       {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">加载中...</p>
-        </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress sx={{ mb: 2, color: 'primary.main' }} />
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            正在加载文件...
+          </Typography>
+        </Box>
       ) : error ? (
-        <div className="text-center py-8">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={loadFiles}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            重试
-          </button>
-        </div>
-      ) : files.length === 0 ? (
-        <div className="text-center py-8">
-          <File className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600">暂无文件</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* 表头 */}
-          <div className="flex items-center px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
-            <div className="w-8">
-              <button onClick={toggleSelectAll}>
-                {selectedFiles.size === files.length ? (
-                  <CheckSquare className="w-4 h-4 text-blue-600" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            <div className="flex-1">文件名</div>
-            <div className="w-20">类型</div>
-            <div className="w-20">大小</div>
-            <div className="w-24">上传者</div>
-            <div className="w-32">上传时间</div>
-            <div className="w-24">操作</div>
-          </div>
-
-          {/* 文件行 */}
-          {files.map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+        <Alert 
+          severity="error" 
+          sx={{ borderRadius: 2 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={loadFiles}
+              sx={{ borderRadius: 1 }}
             >
-              <div className="w-8">
-                <button onClick={() => toggleFileSelection(file.id)}>
-                  {selectedFiles.has(file.id) ? (
-                    <CheckSquare className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <Square className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
+              重试
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      ) : files.length === 0 ? (
+        <Paper elevation={0} sx={{ p: 8, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 2 }}>
+          <FilePresent sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
+            暂无文件
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+            {chatroomId ? '该聊天室中还没有文件' : '您还没有上传任何文件'}
+          </Typography>
+        </Paper>
+      ) : (
+        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: 1, borderColor: 'divider' }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedFiles.size > 0 && selectedFiles.size < files.length}
+                    checked={files.length > 0 && selectedFiles.size === files.length}
+                    onChange={toggleSelectAll}
+                    sx={{ color: 'primary.main' }}
+                  />
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>文件名</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>类型</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>大小</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>上传者</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>上传时间</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>操作</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {files.map((file) => (
+                <TableRow
+                  key={file.id}
+                  hover
+                  sx={{
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    },
+                    ...(selectedFiles.has(file.id) && {
+                      bgcolor: 'action.selected',
+                    }),
+                  }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedFiles.has(file.id)}
+                      onChange={() => toggleFileSelection(file.id)}
+                      sx={{ color: 'primary.main' }}
+                    />
+                  </TableCell>
 
-              <div className="flex-1 flex items-center space-x-3 min-w-0">
-                {getFileIcon(file)}
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {file.file_name}
-                  </p>
-                </div>
-              </div>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'transparent' }}>
+                        {getFileIcon(file)}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 500,
+                            color: 'text.primary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 200,
+                          }}
+                        >
+                          {file.file_name}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
 
-              <div className="w-20 text-xs text-gray-500">
-                {getFileTypeLabel(file.content_type)}
-              </div>
+                  <TableCell>
+                    <Chip
+                      label={getFileTypeLabel(file.content_type)}
+                      size="small"
+                      color={getFileTypeColor(file.content_type)}
+                      sx={{ borderRadius: 2, fontWeight: 500 }}
+                    />
+                  </TableCell>
 
-              <div className="w-20 text-xs text-gray-500">
-                {formatFileSize(file.file_size)}
-              </div>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      {formatFileSize(file.file_size)}
+                    </Typography>
+                  </TableCell>
 
-              <div className="w-24 text-xs text-gray-500 truncate">
-                {file.uploader?.username || "未知"}
-              </div>
+                  <TableCell>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'text.secondary',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 100,
+                      }}
+                    >
+                      {file.uploader?.username || "未知"}
+                    </Typography>
+                  </TableCell>
 
-              <div className="w-32 text-xs text-gray-500">
-                {formatDate(file.uploaded_at)}
-              </div>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      {formatDate(file.uploaded_at)}
+                    </Typography>
+                  </TableCell>
 
-              <div className="w-24">
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => handleFileAction(file, "preview")}
-                    className="p-1 text-gray-400 hover:text-blue-600"
-                    title="预览"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleFileAction(file, "download")}
-                    className="p-1 text-gray-400 hover:text-green-600"
-                    title="下载"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleFileAction(file, "delete")}
-                    className="p-1 text-gray-400 hover:text-red-600"
-                    title="删除"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="预览">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleFileAction(file, "preview")}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                              bgcolor: 'primary.main',
+                              color: 'white',
+                            },
+                          }}
+                        >
+                          <Visibility fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="下载">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleFileAction(file, "download")}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                              bgcolor: 'success.main',
+                              color: 'white',
+                            },
+                          }}
+                        >
+                          <Download fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="删除">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleFileAction(file, "delete")}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                              bgcolor: 'error.main',
+                              color: 'white',
+                            },
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {/* 分页 */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             共 {totalFiles} 个文件，第 {currentPage} / {totalPages} 页
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          </Typography>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
+            color="primary"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
