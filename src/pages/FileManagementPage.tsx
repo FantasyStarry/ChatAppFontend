@@ -28,16 +28,19 @@ import {
   HardDrive,
   TrendingUp,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import FileUpload from "../components/FileUpload";
 import FileList from "../components/FileList";
 import FilePreview from "../components/FilePreview";
 import type { FileInfo, ChatRoom } from "../types";
 import { apiService } from "../services/api";
+import { useNavigate } from "react-router-dom";
 // import { useAuth } from '../hooks/useAuth';
 
 const FileManagementPage: React.FC = () => {
   // const { user } = useAuth(); // 暂时不使用
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedChatroom, setSelectedChatroom] = useState<number | null>(null);
@@ -186,13 +189,38 @@ const FileManagementPage: React.FC = () => {
         {/* 头部 */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
-                📁 文件管理
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                管理您在各个聊天室中上传的文件
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowLeft size={18} />}
+                onClick={() => navigate('/')}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1.25,
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  fontWeight: 500,
+                  minWidth: 100,
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                返回聊天
+              </Button>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
+                  📁 文件管理
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                  管理您在各个聊天室中上传的文件
+                </Typography>
+              </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button

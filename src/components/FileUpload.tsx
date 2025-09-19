@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -35,6 +35,8 @@ interface FileUploadProps {
   maxFileSize?: number; // in MB, default 50MB
   allowedTypes?: string[];
   className?: string;
+  externalFiles?: File[]; // 外部传入的文件
+  onExternalFilesProcessed?: () => void; // 外部文件处理完成回调
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -43,10 +45,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onUploadError,
   maxFileSize = 50,
   allowedTypes = [],
+  externalFiles,
+  onExternalFilesProcessed,
 }) => {
   const [uploadQueue, setUploadQueue] = useState<FileUploadProgress[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const processedExternalFiles = useRef<string[]>([]); // 记录已处理的外部文件
+  const completedUploads = useRef<Set<string>>(new Set()); // 记录已完成的上传
 
   // 生成唯一ID
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -90,6 +96,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
       const newUploads: FileUploadProgress[] = [];
 
       Array.from(files).forEach((file) => {
+        // 检查是否已在队列中
+        const fileSignature = `${file.name}-${file.size}-${file.lastModified}`;
+        const existsInQueue = uploadQueue.some(item => {
+          const itemSignature = `${item.file.name}-${item.file.size}-${item.file.lastModified}`;
+          return itemSignature === fileSignature;
+        });
+        
+        if (existsInQueue) {
+          console.log('文件已在队列中，跳过:', file.name);
+          return;
+        }
+
         const error = validateFile(file);
         const uploadItem: FileUploadProgress = {
           id: generateId(),
@@ -101,6 +119,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
         newUploads.push(uploadItem);
       });
 
+      if (newUploads.length === 0) {
+        console.log('没有新文件需要处理');
+        return;
+      }
+
       setUploadQueue((prev) => [...prev, ...newUploads]);
 
       newUploads.forEach((upload) => {
@@ -109,12 +132,85 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }
       });
     },
-    [chatroomId, maxFileSize, allowedTypes]
+    [chatroomId, maxFileSize, allowedTypes, uploadQueue]
   );
+
+  // 处理外部传入的文件
+  useEffect(() => {
+    if (externalFiles && externalFiles.length > 0) {
+      console.log('收到外部文件:', externalFiles);
+      
+      // 创建当前文件批次的标识符
+      const currentBatch = externalFiles.map(file => 
+        `${file.name}-${file.size}-${file.lastModified}`
+      ).sort().join('|');
+      
+      // 检查这个批次是否已经处理过
+      if (processedExternalFiles.current.includes(currentBatch)) {
+        console.log('这个文件批次已经处理过，跳过');
+        if (onExternalFilesProcessed) {
+          onExternalFilesProcessed();
+        }
+        return;
+      }
+      
+      // 检查是否已经处理过这些文件（防止重复处理）
+      const newFiles = externalFiles.filter(file => {
+        const fileSignature = `${file.name}-${file.size}-${file.lastModified}`;
+        return !uploadQueue.some(item => {
+          const itemSignature = `${item.file.name}-${item.file.size}-${item.file.lastModified}`;
+          return itemSignature === fileSignature;
+        });
+      });
+      
+      if (newFiles.length === 0) {
+        console.log('所有文件已经在队列中，跳过处理');
+        if (onExternalFilesProcessed) {
+          onExternalFilesProcessed();
+        }
+        return;
+      }
+      
+      // 记录这个批次已处理
+      processedExternalFiles.current.push(currentBatch);
+      // 保留最近50个批次记录
+      if (processedExternalFiles.current.length > 50) {
+        processedExternalFiles.current = processedExternalFiles.current.slice(-25);
+      }
+      
+      console.log('处理新文件:', newFiles);
+      
+      // 模拟 FileList 对象
+      const fileList = {
+        length: newFiles.length,
+        item: (index: number) => newFiles[index] || null,
+        [Symbol.iterator]: function* () {
+          for (let i = 0; i < newFiles.length; i++) {
+            yield newFiles[i];
+          }
+        },
+      } as FileList;
+      
+      handleFiles(fileList);
+      
+      // 立即通知外部组件文件已处理，避免重复处理
+      if (onExternalFilesProcessed) {
+        setTimeout(() => {
+          onExternalFilesProcessed();
+        }, 50); // 减少延迟时间
+      }
+    }
+  }, [externalFiles]); // 移除 uploadQueue 依赖，避免循环触发
 
   // 开始上传文件
   const startUpload = async (uploadItem: FileUploadProgress) => {
     try {
+      // 检查是否已经完成上传
+      if (completedUploads.current.has(uploadItem.id)) {
+        console.log('文件已经上传完成，跳过:', uploadItem.file.name);
+        return;
+      }
+
       setUploadQueue((prev) =>
         prev.map((item) =>
           item.id === uploadItem.id
@@ -143,8 +239,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
 
-      if (onUploadComplete) {
-        onUploadComplete([result]);
+      // 记录为已完成并调用回调
+      if (!completedUploads.current.has(uploadItem.id)) {
+        completedUploads.current.add(uploadItem.id);
+        console.log('调用上传完成回调:', result.file_name);
+        if (onUploadComplete) {
+          onUploadComplete([result]);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
@@ -185,6 +286,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // 清空队列
   const clearQueue = () => {
     setUploadQueue([]);
+    completedUploads.current.clear(); // 清空已完成记录
   };
 
   // 拖拽事件处理

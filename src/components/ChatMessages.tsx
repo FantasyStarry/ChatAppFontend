@@ -270,7 +270,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           fullWidth
           multiline
           maxRows={4}
-          placeholder="输入消息..."
+          placeholder="输入消息... (可粘贴图片或拖拽文件)"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -378,6 +378,10 @@ const ChatMessages: React.FC = () => {
   // 拖拽上传状态
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragEnter, setIsDragEnter] = useState(false);
+  const [draggedFiles, setDraggedFiles] = useState<File[]>([]);
+  const [pastedFiles, setPastedFiles] = useState<File[]>([]);
+  const [processingFiles, setProcessingFiles] = useState(false); // 防止重复处理
+  const processedFiles = useRef<Set<string>>(new Set()); // 跟踪已处理的文件
   const dragCounter = useRef(0);
 
   // 自动滚动到底部
@@ -388,6 +392,16 @@ const ChatMessages: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 组件卸载时清理状态
+  useEffect(() => {
+    return () => {
+      setProcessingFiles(false);
+      setDraggedFiles([]);
+      setPastedFiles([]);
+      processedFiles.current.clear();
+    };
+  }, []);
 
   // 拖拽上传处理
   const handleDragEnter = (e: React.DragEvent) => {
@@ -428,42 +442,74 @@ const ChatMessages: React.FC = () => {
       return;
     }
 
+    if (processingFiles) {
+      console.log('正在处理文件，忽略重复拖拽');
+      return;
+    }
+
     const files = Array.from(e.dataTransfer.files);
+    console.log('拖拽文件:', files);
+    
     if (files.length > 0) {
-      // 打开文件上传区域并上传文件
+      setProcessingFiles(true);
+      // 打开文件上传区域并传递文件
       setFileDrawerOpen(true);
       setShowUploadArea(true);
       
-      // 需要在 FileUpload 组件中处理这些文件
-      // 这里可以通过事件或者状态传递给 FileUpload 组件
+      // 清空之前的文件再设置新文件
+      setPastedFiles([]); // 清空粘贴文件
+      setDraggedFiles(files);
+      console.log('设置拖拽文件:', files);
     }
   };
 
   // 粘贴上传处理
   const handlePaste = async (e: React.ClipboardEvent) => {
-    if (!currentRoom) return;
+    console.log('粘贴事件触发:', e.clipboardData);
+    
+    if (!currentRoom) {
+      console.log('没有当前房间，忽略粘贴事件');
+      return;
+    }
+
+    if (processingFiles) {
+      console.log('正在处理文件，忽略重复粘贴');
+      return;
+    }
 
     const items = Array.from(e.clipboardData.items);
-    const imageItems = items.filter(item => item.type.startsWith('image/'));
+    console.log('剪贴板项目:', items.map(item => ({ type: item.type, kind: item.kind })));
     
-    if (imageItems.length > 0) {
+    // 支持所有类型的文件，不仅仅是图片
+    const fileItems = items.filter(item => item.kind === 'file');
+    console.log('找到文件项目:', fileItems.length);
+    
+    if (fileItems.length > 0) {
       e.preventDefault();
+      setProcessingFiles(true);
       
-      // 打开文件上传区域
-      setFileDrawerOpen(true);
-      setShowUploadArea(true);
-      
-      // 处理粘贴的图片
+      // 处理粘贴的文件
       const files: File[] = [];
-      for (const item of imageItems) {
+      for (const item of fileItems) {
         const file = item.getAsFile();
         if (file) {
+          console.log('获得粘贴文件:', file.name, file.type, file.size);
           files.push(file);
         }
       }
       
-      // 这里可以通过事件或者状态传递给 FileUpload 组件
-      console.log('粘贴了图片:', files);
+      if (files.length > 0) {
+        console.log('设置粘贴文件:', files);
+        // 打开文件上传区域
+        setFileDrawerOpen(true);
+        setShowUploadArea(true);
+        setDraggedFiles([]); // 清空拖拽文件
+        setPastedFiles(files);
+      } else {
+        setProcessingFiles(false);
+      }
+    } else {
+      console.log('没有找到文件');
     }
   };
 
@@ -471,8 +517,26 @@ const ChatMessages: React.FC = () => {
   const handleFileUploadComplete = async (files: FileInfo[]) => {
     console.log("文件上传完成:", files);
 
+    // 防止重复处理相同文件
+    const newFiles = files.filter(file => {
+      const fileKey = `${file.file_name}-${file.file_size}-${file.created_at}`;
+      if (processedFiles.current.has(fileKey)) {
+        console.log('文件已处理，跳过:', file.file_name);
+        return false;
+      }
+      processedFiles.current.add(fileKey);
+      return true;
+    });
+
+    if (newFiles.length === 0) {
+      console.log('所有文件已处理，跳过发送消息');
+      setShowUploadArea(false);
+      setProcessingFiles(false);
+      return;
+    }
+
     // 在聊天记录中显示文件上传消息
-    for (const file of files) {
+    for (const file of newFiles) {
       const fileMessage = `[文件] ${file.file_name} (${formatFileSize(
         file.file_size
       )})`;
@@ -484,11 +548,32 @@ const ChatMessages: React.FC = () => {
     }
 
     setShowUploadArea(false);
+    setProcessingFiles(false); // 重置处理状态
+    
+    // 清理过期的文件记录（保留最近100个）
+    if (processedFiles.current.size > 100) {
+      const keys = Array.from(processedFiles.current);
+      processedFiles.current.clear();
+      keys.slice(-50).forEach(key => processedFiles.current.add(key));
+    }
+  };
+
+  const handleDraggedFilesProcessed = () => {
+    console.log('清空拖拽文件');
+    setDraggedFiles([]);
+    setProcessingFiles(false); // 重置处理状态
+  };
+
+  const handlePastedFilesProcessed = () => {
+    console.log('清空粘贴文件');
+    setPastedFiles([]);
+    setProcessingFiles(false); // 重置处理状态
   };
 
   const handleFileUploadError = (error: string) => {
     console.error("文件上传错误:", error);
     alert(`上传失败: ${error}`);
+    setProcessingFiles(false); // 重置处理状态
   };
 
   const handleFilePreview = (file: FileInfo) => {
@@ -582,6 +667,8 @@ const ChatMessages: React.FC = () => {
       onDrop={handleDrop}
       onPaste={handlePaste}
       tabIndex={0} // 使容器可以接收键盘事件
+      onFocus={() => console.log('聊天窗口获得焦点，可以粘贴文件')}
+      style={{ outline: 'none' }} // 移除焦点边框
     >
       {/* 拖拽覆盖层 */}
       {isDragEnter && (
@@ -771,6 +858,14 @@ const ChatMessages: React.FC = () => {
               onUploadComplete={handleFileUploadComplete}
               onUploadError={handleFileUploadError}
               maxFileSize={50}
+              externalFiles={draggedFiles.length > 0 ? draggedFiles : (pastedFiles.length > 0 ? pastedFiles : undefined)}
+              onExternalFilesProcessed={() => {
+                if (draggedFiles.length > 0) {
+                  handleDraggedFilesProcessed();
+                } else if (pastedFiles.length > 0) {
+                  handlePastedFilesProcessed();
+                }
+              }}
             />
           </Box>
         )}
