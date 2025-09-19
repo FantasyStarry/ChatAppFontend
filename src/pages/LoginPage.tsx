@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Card,
@@ -11,19 +11,19 @@ import {
   Avatar,
   Fade,
   CircularProgress,
-} from '@mui/material';
-import { ChatBubble, Login as LoginIcon } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
-import type { LoginRequest } from '../types';
+} from "@mui/material";
+import { ChatBubble, Login as LoginIcon } from "@mui/icons-material";
+import { useAuth } from "../hooks/useAuth";
+import { Navigate } from "react-router-dom";
+import type { LoginRequest } from "../types";
 
 const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth();
   const [formData, setFormData] = useState<LoginRequest>({
-    username: '',
-    password: '',
+    username: "",
+    password: "",
   });
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   // 如果已经登录，重定向到主页
@@ -33,29 +33,51 @@ const LoginPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
     // 清除错误信息
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.username.trim() || !formData.password.trim()) {
-      setError('请输入用户名和密码');
+      setError("请输入用户名和密码");
       return;
     }
 
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       await login(formData);
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || '登录失败，请重试');
+    } catch (err) {
+      // 通过类型缩小处理unknown类型的错误
+      let errorMessage = "登录失败，请重试";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === "object" && "response" in err) {
+        // 处理axios错误格式
+        const axiosError = err as {
+          response?: { data?: { message?: string; messages?: string[] } };
+        };
+        if (axiosError.response?.data?.messages) {
+          // 支持API v2.0格式的messages字段
+          errorMessage = Array.isArray(axiosError.response.data.messages)
+            ? axiosError.response.data.messages.join(", ")
+            : axiosError.response.data.messages;
+        } else if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        }
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      }
+
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -65,14 +87,14 @@ const LoginPage: React.FC = () => {
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         }}
       >
-        <CircularProgress size={60} sx={{ color: 'white' }} />
+        <CircularProgress size={60} sx={{ color: "white" }} />
       </Box>
     );
   }
@@ -80,11 +102,11 @@ const LoginPage: React.FC = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         p: 2,
       }}
     >
@@ -93,17 +115,17 @@ const LoginPage: React.FC = () => {
           <Card
             sx={{
               borderRadius: 4,
-              boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-              overflow: 'hidden',
+              boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+              overflow: "hidden",
             }}
           >
             <CardContent sx={{ p: 4 }}>
               {/* 头部 */}
               <Box
                 sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   mb: 4,
                 }}
               >
@@ -111,9 +133,10 @@ const LoginPage: React.FC = () => {
                   sx={{
                     width: 80,
                     height: 80,
-                    bgcolor: 'primary.main',
+                    bgcolor: "primary.main",
                     mb: 2,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background:
+                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   }}
                 >
                   <ChatBubble sx={{ fontSize: 40 }} />
@@ -161,7 +184,7 @@ const LoginPage: React.FC = () => {
                   autoFocus
                   disabled={submitting}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
+                    "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
                     },
                   }}
@@ -179,7 +202,7 @@ const LoginPage: React.FC = () => {
                   autoComplete="current-password"
                   disabled={submitting}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
+                    "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
                     },
                   }}
@@ -190,22 +213,26 @@ const LoginPage: React.FC = () => {
                   fullWidth
                   variant="contained"
                   disabled={submitting}
-                  startIcon={submitting ? <CircularProgress size={20} /> : <LoginIcon />}
+                  startIcon={
+                    submitting ? <CircularProgress size={20} /> : <LoginIcon />
+                  }
                   sx={{
                     mt: 3,
                     mb: 2,
                     py: 1.5,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                    background:
+                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
                     },
-                    '&:disabled': {
-                      background: 'rgba(0, 0, 0, 0.12)',
+                    "&:disabled": {
+                      background: "rgba(0, 0, 0, 0.12)",
                     },
                   }}
                 >
-                  {submitting ? '登录中...' : '登录'}
+                  {submitting ? "登录中..." : "登录"}
                 </Button>
               </Box>
 
@@ -214,9 +241,9 @@ const LoginPage: React.FC = () => {
                 sx={{
                   mt: 3,
                   p: 2,
-                  bgcolor: 'grey.50',
+                  bgcolor: "grey.50",
                   borderRadius: 2,
-                  textAlign: 'center',
+                  textAlign: "center",
                 }}
               >
                 <Typography variant="body2" color="text.secondary" gutterBottom>

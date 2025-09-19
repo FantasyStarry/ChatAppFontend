@@ -1,51 +1,51 @@
-import React from 'react';
-import { Box, Chip, Typography } from '@mui/material';
-import { 
-  WifiOff as WifiOffIcon, 
-  Wifi as WifiIcon, 
-  Error as ErrorIcon 
-} from '@mui/icons-material';
-import { useChat } from '../contexts/ChatContext';
+import React from "react";
+import { Box, Chip, Typography } from "@mui/material";
+import {
+  WifiOff as WifiOffIcon,
+  Wifi as WifiIcon,
+  Error as ErrorIcon,
+} from "@mui/icons-material";
+import { useChat } from "../hooks/useChat";
 
 interface ConnectionStatusProps {
-  variant?: 'default' | 'compact';
+  variant?: "default" | "compact";
 }
 
-export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
-  variant = 'default' 
+export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
+  variant = "default",
 }) => {
   const { isConnected, error } = useChat();
 
   const getStatusConfig = () => {
     if (error) {
       return {
-        color: 'error' as const,
+        color: "error" as const,
         icon: <ErrorIcon fontSize="small" />,
-        label: 'Connection Error',
+        label: "Connection Error",
         message: error,
       };
     }
-    
+
     if (isConnected) {
       return {
-        color: 'success' as const,
+        color: "success" as const,
         icon: <WifiIcon fontSize="small" />,
-        label: 'Connected',
-        message: 'Real-time chat is active',
+        label: "Connected",
+        message: "Real-time chat is active",
       };
     }
-    
+
     return {
-      color: 'warning' as const,
+      color: "warning" as const,
       icon: <WifiOffIcon fontSize="small" />,
-      label: 'Disconnected',
-      message: 'Attempting to reconnect...',
+      label: "Disconnected",
+      message: "Attempting to reconnect...",
     };
   };
 
   const status = getStatusConfig();
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <Chip
         icon={status.icon}
@@ -55,8 +55,8 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         size="small"
         sx={{
           fontWeight: 500,
-          '& .MuiChip-icon': {
-            fontSize: '16px',
+          "& .MuiChip-icon": {
+            fontSize: "16px",
           },
         }}
       />
@@ -66,16 +66,24 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   return (
     <Box
       sx={{
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         gap: 1,
         p: 1.5,
         borderRadius: 1,
-        bgcolor: status.color === 'error' ? 'error.light' : 
-                status.color === 'success' ? 'success.light' : 'warning.light',
+        bgcolor:
+          status.color === "error"
+            ? "error.light"
+            : status.color === "success"
+            ? "success.light"
+            : "warning.light",
         border: 1,
-        borderColor: status.color === 'error' ? 'error.main' : 
-                    status.color === 'success' ? 'success.main' : 'warning.main',
+        borderColor:
+          status.color === "error"
+            ? "error.main"
+            : status.color === "success"
+            ? "success.main"
+            : "warning.main",
         mb: 1,
       }}
     >

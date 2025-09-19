@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -31,22 +31,21 @@ import {
   Pagination,
   Tooltip,
   Container,
-} from '@mui/material';
+} from "@mui/material";
 import {
   MoreVert,
   Edit,
   Delete,
   Person,
   AdminPanelSettings,
-  Block,
   Search,
   Refresh,
   People,
   PersonAdd,
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import type { User, PaginationParams } from '../types';
-import MainLayout from '../components/MainLayout';
+} from "@mui/icons-material";
+import { useAuth } from "../hooks/useAuth";
+import type { User } from "../types";
+import MainLayout from "../components/MainLayout";
 
 interface UserStats {
   totalUsers: number;
@@ -79,7 +78,7 @@ const UserManagementPage: React.FC = () => {
     error: null,
     currentPage: 1,
     totalPages: 1,
-    searchQuery: '',
+    searchQuery: "",
   });
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -88,74 +87,39 @@ const UserManagementPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // 模拟数据（实际项目中应该从API获取）
-  const mockUsers: User[] = [
-    {
-      id: 1,
-      username: 'admin',
-      email: 'admin@example.com',
-      role: 'admin',
-      status: 'online',
-      lastSeen: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      username: 'user1',
-      email: 'user1@example.com',
-      role: 'user',
-      status: 'online',
-      lastSeen: new Date(Date.now() - 300000).toISOString(), // 5分钟前
-    },
-    {
-      id: 3,
-      username: 'user2',
-      email: 'user2@example.com',
-      role: 'user',
-      status: 'away',
-      lastSeen: new Date(Date.now() - 1800000).toISOString(), // 30分钟前
-    },
-    {
-      id: 4,
-      username: 'user3',
-      email: 'user3@example.com',
-      role: 'user',
-      status: 'offline',
-      lastSeen: new Date(Date.now() - 86400000).toISOString(), // 1天前
-    },
-  ];
-
-  const mockStats: UserStats = {
-    totalUsers: 24,
-    onlineUsers: 8,
-    activeToday: 15,
-    newThisWeek: 3,
-  };
-
   // 检查权限
-  const hasPermission = currentUser?.role === 'admin';
+  const hasPermission = currentUser?.role === "admin";
 
   useEffect(() => {
     if (!hasPermission) return;
 
-    // 模拟API加载
+    // TODO: 实现真实的API调用
     const loadData = async () => {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
       try {
-        // 模拟API延迟
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setState(prev => ({
+        // TODO: 调用实际的API服务
+        // const response = await api.get('/users');
+        // const statsResponse = await api.get('/users/stats');
+
+        // 暂时设置空数据，等待API实现
+        setState((prev) => ({
           ...prev,
-          users: mockUsers,
-          stats: mockStats,
+          users: [],
+          stats: {
+            totalUsers: 0,
+            onlineUsers: 0,
+            activeToday: 0,
+            newThisWeek: 0,
+          },
           isLoading: false,
-          totalPages: Math.ceil(mockUsers.length / 10),
+          totalPages: 1,
         }));
-      } catch (error) {
-        setState(prev => ({
+      } catch (err) {
+        console.error("Failed to load user data:", err);
+        setState((prev) => ({
           ...prev,
-          error: '加载用户数据失败',
+          error: "加载用户数据失败",
           isLoading: false,
         }));
       }
@@ -189,19 +153,22 @@ const UserManagementPage: React.FC = () => {
     if (!editingUser) return;
 
     try {
-      // TODO: 实际API调用
-      console.log('Saving user:', editingUser);
-      
+      // TODO: 调用实际的API服务
+      // await api.put(`/users/${editingUser.id}`, editingUser);
+      console.log("Saving user:", editingUser);
+
       // 更新本地状态
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        users: prev.users.map(u => u.id === editingUser.id ? editingUser : u),
+        users: prev.users.map((u) =>
+          u.id === editingUser.id ? editingUser : u
+        ),
       }));
-      
+
       setEditDialogOpen(false);
       setEditingUser(null);
     } catch (error) {
-      console.error('Failed to save user:', error);
+      console.error("Failed to save user:", error);
     }
   };
 
@@ -209,45 +176,46 @@ const UserManagementPage: React.FC = () => {
     if (!selectedUser) return;
 
     try {
-      // TODO: 实际API调用
-      console.log('Deleting user:', selectedUser.id);
-      
+      // TODO: 调用实际的API服务
+      // await api.delete(`/users/${selectedUser.id}`);
+      console.log("Deleting user:", selectedUser.id);
+
       // 更新本地状态
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        users: prev.users.filter(u => u.id !== selectedUser.id),
+        users: prev.users.filter((u) => u.id !== selectedUser.id),
       }));
-      
+
       setDeleteDialogOpen(false);
       setSelectedUser(null);
     } catch (error) {
-      console.error('Failed to delete user:', error);
+      console.error("Failed to delete user:", error);
     }
   };
 
-  const getStatusColor = (status: User['status']) => {
+  const getStatusColor = (status: User["status"]) => {
     switch (status) {
-      case 'online':
-        return 'success';
-      case 'away':
-        return 'warning';
-      case 'offline':
-        return 'default';
+      case "online":
+        return "success";
+      case "away":
+        return "warning";
+      case "offline":
+        return "default";
       default:
-        return 'default';
+        return "default";
     }
   };
 
-  const getStatusText = (status: User['status']) => {
+  const getStatusText = (status: User["status"]) => {
     switch (status) {
-      case 'online':
-        return '在线';
-      case 'away':
-        return '离开';
-      case 'offline':
-        return '离线';
+      case "online":
+        return "在线";
+      case "away":
+        return "离开";
+      case "offline":
+        return "离线";
       default:
-        return '未知';
+        return "未知";
     }
   };
 
@@ -259,7 +227,7 @@ const UserManagementPage: React.FC = () => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return '刚刚';
+    if (minutes < 1) return "刚刚";
     if (minutes < 60) return `${minutes}分钟前`;
     if (hours < 24) return `${hours}小时前`;
     return `${days}天前`;
@@ -269,9 +237,7 @@ const UserManagementPage: React.FC = () => {
     return (
       <MainLayout>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Alert severity="error">
-            您没有权限访问用户管理页面
-          </Alert>
+          <Alert severity="error">您没有权限访问用户管理页面</Alert>
         </Container>
       </MainLayout>
     );
@@ -281,7 +247,12 @@ const UserManagementPage: React.FC = () => {
     <MainLayout>
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight="bold"
+            gutterBottom
+          >
             用户管理
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -294,8 +265,8 @@ const UserManagementPage: React.FC = () => {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar sx={{ bgcolor: "primary.main" }}>
                     <People />
                   </Avatar>
                   <Box>
@@ -310,12 +281,12 @@ const UserManagementPage: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'success.main' }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar sx={{ bgcolor: "success.main" }}>
                     <Person />
                   </Avatar>
                   <Box>
@@ -330,12 +301,12 @@ const UserManagementPage: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'info.main' }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar sx={{ bgcolor: "info.main" }}>
                     <PersonAdd />
                   </Avatar>
                   <Box>
@@ -350,12 +321,12 @@ const UserManagementPage: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'warning.main' }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar sx={{ bgcolor: "warning.main" }}>
                     <PersonAdd />
                   </Avatar>
                   <Box>
@@ -375,14 +346,18 @@ const UserManagementPage: React.FC = () => {
         {/* 操作栏 */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
               <TextField
                 placeholder="搜索用户..."
                 value={state.searchQuery}
-                onChange={(e) => setState(prev => ({ ...prev, searchQuery: e.target.value }))}
+                onChange={(e) =>
+                  setState((prev) => ({ ...prev, searchQuery: e.target.value }))
+                }
                 size="small"
                 InputProps={{
-                  startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                  startAdornment: (
+                    <Search sx={{ mr: 1, color: "text.secondary" }} />
+                  ),
                 }}
                 sx={{ flex: 1, maxWidth: 400 }}
               />
@@ -416,16 +391,28 @@ const UserManagementPage: React.FC = () => {
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
                           <Skeleton variant="circular" width={40} height={40} />
                           <Skeleton variant="text" width={120} />
                         </Box>
                       </TableCell>
-                      <TableCell><Skeleton variant="text" width={200} /></TableCell>
-                      <TableCell><Skeleton variant="text" width={80} /></TableCell>
-                      <TableCell><Skeleton variant="text" width={60} /></TableCell>
-                      <TableCell><Skeleton variant="text" width={100} /></TableCell>
-                      <TableCell><Skeleton variant="text" width={40} /></TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={200} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={80} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={60} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={100} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={40} />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : state.users.length === 0 ? (
@@ -440,8 +427,10 @@ const UserManagementPage: React.FC = () => {
                   state.users.map((user) => (
                     <TableRow key={user.id} hover>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <Avatar sx={{ bgcolor: "primary.main" }}>
                             {user.username.charAt(0).toUpperCase()}
                           </Avatar>
                           <Typography variant="body2" fontWeight="medium">
@@ -453,9 +442,15 @@ const UserManagementPage: React.FC = () => {
                       <TableCell>
                         <Chip
                           size="small"
-                          label={user.role === 'admin' ? '管理员' : '用户'}
-                          color={user.role === 'admin' ? 'primary' : 'default'}
-                          icon={user.role === 'admin' ? <AdminPanelSettings /> : <Person />}
+                          label={user.role === "admin" ? "管理员" : "用户"}
+                          color={user.role === "admin" ? "primary" : "default"}
+                          icon={
+                            user.role === "admin" ? (
+                              <AdminPanelSettings />
+                            ) : (
+                              <Person />
+                            )
+                          }
                         />
                       </TableCell>
                       <TableCell>
@@ -467,7 +462,9 @@ const UserManagementPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {user.lastSeen ? formatLastSeen(user.lastSeen) : '从未'}
+                          {user.lastSeen
+                            ? formatLastSeen(user.lastSeen)
+                            : "从未"}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
@@ -490,11 +487,13 @@ const UserManagementPage: React.FC = () => {
 
           {/* 分页 */}
           {state.totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
               <Pagination
                 count={state.totalPages}
                 page={state.currentPage}
-                onChange={(_, page) => setState(prev => ({ ...prev, currentPage: page }))}
+                onChange={(_, page) =>
+                  setState((prev) => ({ ...prev, currentPage: page }))
+                }
                 color="primary"
               />
             </Box>
@@ -514,7 +513,7 @@ const UserManagementPage: React.FC = () => {
             <Edit sx={{ mr: 2 }} />
             编辑用户
           </MenuItem>
-          <MenuItem onClick={handleDeleteUser} sx={{ color: 'error.main' }}>
+          <MenuItem onClick={handleDeleteUser} sx={{ color: "error.main" }}>
             <Delete sx={{ mr: 2 }} />
             删除用户
           </MenuItem>
@@ -529,25 +528,41 @@ const UserManagementPage: React.FC = () => {
         >
           <DialogTitle>编辑用户</DialogTitle>
           <DialogContent>
-            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box
+              sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 3 }}
+            >
               <TextField
                 label="用户名"
-                value={editingUser?.username || ''}
-                onChange={(e) => setEditingUser(prev => prev ? { ...prev, username: e.target.value } : null)}
+                value={editingUser?.username || ""}
+                onChange={(e) =>
+                  setEditingUser((prev) =>
+                    prev ? { ...prev, username: e.target.value } : null
+                  )
+                }
                 fullWidth
               />
               <TextField
                 label="邮箱"
                 type="email"
-                value={editingUser?.email || ''}
-                onChange={(e) => setEditingUser(prev => prev ? { ...prev, email: e.target.value } : null)}
+                value={editingUser?.email || ""}
+                onChange={(e) =>
+                  setEditingUser((prev) =>
+                    prev ? { ...prev, email: e.target.value } : null
+                  )
+                }
                 fullWidth
               />
               <FormControl fullWidth>
                 <InputLabel>角色</InputLabel>
                 <Select
-                  value={editingUser?.role || 'user'}
-                  onChange={(e) => setEditingUser(prev => prev ? { ...prev, role: e.target.value as 'user' | 'admin' } : null)}
+                  value={editingUser?.role || "user"}
+                  onChange={(e) =>
+                    setEditingUser((prev) =>
+                      prev
+                        ? { ...prev, role: e.target.value as "user" | "admin" }
+                        : null
+                    )
+                  }
                   label="角色"
                 >
                   <MenuItem value="user">用户</MenuItem>
@@ -558,7 +573,9 @@ const UserManagementPage: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setEditDialogOpen(false)}>取消</Button>
-            <Button onClick={handleSaveUser} variant="contained">保存</Button>
+            <Button onClick={handleSaveUser} variant="contained">
+              保存
+            </Button>
           </DialogActions>
         </Dialog>
 
@@ -575,7 +592,11 @@ const UserManagementPage: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
-            <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            <Button
+              onClick={handleConfirmDelete}
+              color="error"
+              variant="contained"
+            >
               删除
             </Button>
           </DialogActions>

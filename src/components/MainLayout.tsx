@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Drawer,
@@ -14,7 +14,7 @@ import {
   useTheme,
   Tooltip,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   AccountCircle,
@@ -22,12 +22,12 @@ import {
   Settings,
   People,
   ChatBubble,
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { useChat } from '../contexts/ChatContext';
-import ChatRoomList from '../components/ChatRoomList';
-import ConnectionStatus from '../components/ConnectionStatus';
-import { Navigate, useNavigate } from 'react-router-dom';
+} from "@mui/icons-material";
+import { useAuth } from "../hooks/useAuth";
+import { useChat } from "../hooks/useChat";
+import ChatRoomList from "../components/ChatRoomList";
+import ConnectionStatus from "../components/ConnectionStatus";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const DRAWER_WIDTH = 320;
 
@@ -38,10 +38,10 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const theme = useTheme();
   const navigate = useNavigate();
-  
+
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const { isConnected, currentRoom } = useChat();
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -67,41 +67,41 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
       // Logout will continue even if there's an error
     }
   };
 
   const handleUserManagement = () => {
     handleMenuClose();
-    navigate('/user-management');
+    navigate("/user-management");
   };
 
   const drawer = (
     <Box
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.paper',
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.paper",
       }}
     >
       {/* 侧边栏头部 */}
       <Box
         sx={{
           p: 2,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 2,
           borderBottom: 1,
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
+          borderColor: "divider",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
         }}
       >
         <Avatar
           sx={{
-            bgcolor: 'rgba(255,255,255,0.2)',
+            bgcolor: "rgba(255,255,255,0.2)",
             width: 40,
             height: 40,
           }}
@@ -112,17 +112,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Typography variant="h6" fontWeight="bold">
             聊天室
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <Box
               sx={{
                 width: 8,
                 height: 8,
-                borderRadius: '50%',
-                bgcolor: isConnected ? '#10b981' : '#ef4444',
+                borderRadius: "50%",
+                bgcolor: isConnected ? "#10b981" : "#ef4444",
               }}
             />
             <Typography variant="caption">
-              {isConnected ? '已连接' : '未连接'}
+              {isConnected ? "已连接" : "未连接"}
             </Typography>
           </Box>
         </Box>
@@ -133,8 +133,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Box
           sx={{
             p: 2,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
           }}
         >
           <Typography variant="body2" sx={{ opacity: 0.8 }}>
@@ -157,14 +157,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </Box>
 
       {/* 聊天室列表 */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, overflow: "hidden" }}>
         <ChatRoomList />
       </Box>
     </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ display: "flex", height: "100vh" }}>
       {/* 顶部应用栏 */}
       <AppBar
         position="fixed"
@@ -181,30 +181,33 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{ mr: 2, display: { md: "none" } }}
           >
             <MenuIcon />
           </IconButton>
 
           {/* 标题区域 */}
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 2 }}>
             <Typography variant="h6" noWrap component="div">
-              {currentRoom ? currentRoom.name : '聊天应用'}
+              {currentRoom ? currentRoom.name : "聊天应用"}
             </Typography>
             {currentRoom && (
               <Chip
                 size="small"
-                label={isConnected ? '在线' : '离线'}
-                color={isConnected ? 'success' : 'error'}
+                label={isConnected ? "在线" : "离线"}
+                color={isConnected ? "success" : "error"}
                 variant="outlined"
-                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+                sx={{ color: "white", borderColor: "rgba(255,255,255,0.5)" }}
               />
             )}
           </Box>
 
           {/* 用户菜单 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
               {user?.username}
             </Typography>
             <Tooltip title="用户菜单">
@@ -217,10 +220,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 sx={{
                   p: 0.5,
                   border: 2,
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.8)',
-                    bgcolor: 'rgba(255,255,255,0.1)',
+                  borderColor: "rgba(255,255,255,0.3)",
+                  "&:hover": {
+                    borderColor: "rgba(255,255,255,0.8)",
+                    bgcolor: "rgba(255,255,255,0.1)",
                   },
                 }}
               >
@@ -228,12 +231,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   sx={{
                     width: 36,
                     height: 36,
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                    color: 'primary.main',
-                    fontSize: '1rem',
-                    fontWeight: 'bold',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    border: '2px solid rgba(255,255,255,0.2)',
+                    bgcolor: "rgba(255,255,255,0.9)",
+                    color: "primary.main",
+                    fontSize: "1rem",
+                    fontWeight: "bold",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    border: "2px solid rgba(255,255,255,0.2)",
                   }}
                 >
                   {user?.username?.charAt(0).toUpperCase()}
@@ -249,13 +252,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         id="menu-appbar"
         anchorEl={anchorEl}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
+          vertical: "bottom",
+          horizontal: "right",
         }}
         keepMounted
         transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         }}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
@@ -273,7 +276,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             {user?.username}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {user?.email || '聊天用户'}
+            {user?.email || "聊天用户"}
           </Typography>
         </Box>
         <Divider />
@@ -283,7 +286,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <AccountCircle sx={{ mr: 2 }} />
           个人资料
         </MenuItem>
-        {user?.role === 'admin' && (
+        {user?.role === "admin" && (
           <MenuItem onClick={handleUserManagement}>
             <People sx={{ mr: 2 }} />
             用户管理
@@ -294,13 +297,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           设置
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }} disabled={isLoading}>
+        <MenuItem
+          onClick={handleLogout}
+          sx={{ color: "error.main" }}
+          disabled={isLoading}
+        >
           {isLoading ? (
             <CircularProgress size={16} sx={{ mr: 2 }} />
           ) : (
             <Logout sx={{ mr: 2 }} />
           )}
-          {isLoading ? '正在退出...' : '退出登录'}
+          {isLoading ? "正在退出..." : "退出登录"}
         </MenuItem>
       </Menu>
 
@@ -318,23 +325,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             keepMounted: true, // 更好的移动端性能
           }}
           sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: DRAWER_WIDTH,
             },
           }}
         >
           {drawer}
         </Drawer>
-        
+
         {/* 桌面端固定抽屉 */}
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
+            display: { xs: "none", md: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: DRAWER_WIDTH,
             },
           }}
@@ -350,16 +357,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         sx={{
           flexGrow: 1,
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          height: '100vh',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
+          height: "100vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <Toolbar /> {/* 为顶部应用栏留出空间 */}
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          {children}
-        </Box>
+        <Box sx={{ flex: 1, overflow: "hidden" }}>{children}</Box>
       </Box>
     </Box>
   );

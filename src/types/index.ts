@@ -4,16 +4,20 @@ export interface User {
   username: string;
   email?: string;
   avatar?: string;
-  status?: 'online' | 'offline' | 'away';
+  status?: "online" | "offline" | "away";
   lastSeen?: string;
-  role?: 'user' | 'admin';
+  role?: "user" | "admin";
 }
 
+// v2.0 API response format for authentication
 export interface AuthResponse {
   token: string;
   user: User;
   expiresIn?: number;
 }
+
+// Auth response wrapped in new API format
+export type AuthApiResponse = ApiResponse<AuthResponse>;
 
 export interface LoginRequest {
   username: string;
@@ -46,7 +50,7 @@ export interface Message {
   user: User;
   created_at: string;
   updated_at?: string;
-  type?: 'text' | 'system' | 'notification';
+  type?: "text" | "system" | "notification";
   edited?: boolean;
   editedAt?: string;
 }
@@ -59,7 +63,7 @@ export interface FrontendMessage {
   userId: number;
   user: User;
   timestamp: string;
-  type?: 'text' | 'system' | 'notification';
+  type?: "text" | "system" | "notification";
   edited?: boolean;
   editedAt?: string;
 }
@@ -67,12 +71,19 @@ export interface FrontendMessage {
 export interface SendMessageRequest {
   content: string;
   chatroom_id: number;
-  type?: 'text';
+  type?: "text";
 }
 
 // WebSocket message types
 export interface WebSocketMessage {
-  type: 'message' | 'user_joined' | 'user_left' | 'typing' | 'stop_typing' | 'auth' | 'auth_response';
+  type:
+    | "message"
+    | "user_joined"
+    | "user_left"
+    | "typing"
+    | "stop_typing"
+    | "auth"
+    | "auth_response";
   content?: string;
   chatroom_id?: number;
   chatroomId?: number; // Keep for backwards compatibility
@@ -83,13 +94,43 @@ export interface WebSocketMessage {
   success?: boolean; // 用于认证响应
 }
 
-// API Response types
-export interface ApiResponse<T = any> {
+// API Response types - Updated for v2.0 format
+export interface ApiResponse<T = unknown> {
+  code: number;
+  messages: string;
+  data: T | null;
+}
+
+// Legacy API Response type (for backwards compatibility if needed)
+export interface LegacyApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
   error?: string;
 }
+
+// API Error interface for standardized error handling
+export interface StandardApiError {
+  code: number;
+  messages: string;
+  data: null;
+}
+
+// API Response status codes
+export const API_RESPONSE_CODES = {
+  SUCCESS: 1000,
+  BAD_REQUEST: 4000,
+  UNAUTHORIZED: 4001,
+  FORBIDDEN: 4003,
+  NOT_FOUND: 4004,
+  VALIDATION_ERROR: 4005,
+  INTERNAL_ERROR: 5000,
+  DATABASE_ERROR: 5001,
+  THIRD_PARTY_ERROR: 5002,
+} as const;
+
+export type ApiResponseCode =
+  (typeof API_RESPONSE_CODES)[keyof typeof API_RESPONSE_CODES];
 
 export interface PaginationParams {
   limit?: number;
@@ -108,7 +149,7 @@ export interface PaginatedResponse<T> {
 
 // Theme and UI types
 export interface AppTheme {
-  mode: 'light' | 'dark';
+  mode: "light" | "dark";
 }
 
 // Error types
@@ -180,22 +221,22 @@ export interface UserManagementRequest {
     username: string;
     email: string;
     password: string;
-    role?: 'user' | 'admin';
+    role?: "user" | "admin";
   };
-  
+
   // For updating existing users
   updateUser?: {
     username?: string;
     email?: string;
-    role?: 'user' | 'admin';
-    status?: 'active' | 'inactive' | 'banned';
+    role?: "user" | "admin";
+    status?: "active" | "inactive" | "banned";
   };
-  
+
   // For searching/filtering users
   searchUsers?: {
     query?: string;
-    role?: 'user' | 'admin';
-    status?: 'online' | 'offline' | 'away';
+    role?: "user" | "admin";
+    status?: "online" | "offline" | "away";
     pagination?: PaginationParams;
   };
 }
@@ -203,17 +244,17 @@ export interface UserManagementRequest {
 export interface UserManagementResponse {
   // Response for getting all users
   getUsers?: PaginatedResponse<User>;
-  
+
   // Response for getting single user
   getUser?: User;
-  
+
   // Response for user actions
   userAction?: {
     success: boolean;
     message: string;
     user?: User;
   };
-  
+
   // Response for user statistics
   userStats?: {
     totalUsers: number;

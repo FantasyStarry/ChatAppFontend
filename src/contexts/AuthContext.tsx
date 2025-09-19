@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import type { AuthContextType, User, LoginRequest } from '../types';
-import { apiService } from '../services/api';
+import React, { createContext, useReducer, useEffect } from "react";
+import type { AuthContextType, User, LoginRequest } from "../types";
+import { apiService } from "../services/api";
 
 interface AuthState {
   user: User | null;
@@ -11,13 +11,13 @@ interface AuthState {
 }
 
 type AuthAction =
-  | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
-  | { type: 'LOGIN_FAILURE'; payload: string }
-  | { type: 'LOGOUT_START' }
-  | { type: 'LOGOUT' }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'CLEAR_ERROR' };
+  | { type: "LOGIN_START" }
+  | { type: "LOGIN_SUCCESS"; payload: { user: User; token: string } }
+  | { type: "LOGIN_FAILURE"; payload: string }
+  | { type: "LOGOUT_START" }
+  | { type: "LOGOUT" }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "CLEAR_ERROR" };
 
 const initialState: AuthState = {
   user: null,
@@ -29,13 +29,13 @@ const initialState: AuthState = {
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case 'LOGIN_START':
+    case "LOGIN_START":
       return {
         ...state,
         isLoading: true,
         error: null,
       };
-    case 'LOGIN_SUCCESS':
+    case "LOGIN_SUCCESS":
       return {
         ...state,
         user: action.payload.user,
@@ -44,7 +44,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isLoading: false,
         error: null,
       };
-    case 'LOGIN_FAILURE':
+    case "LOGIN_FAILURE":
       return {
         ...state,
         user: null,
@@ -53,13 +53,13 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isLoading: false,
         error: action.payload,
       };
-    case 'LOGOUT_START':
+    case "LOGOUT_START":
       return {
         ...state,
         isLoading: true,
         error: null,
       };
-    case 'LOGOUT':
+    case "LOGOUT":
       return {
         ...state,
         user: null,
@@ -68,12 +68,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isLoading: false,
         error: null,
       };
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return {
         ...state,
         isLoading: action.payload,
       };
-    case 'CLEAR_ERROR':
+    case "CLEAR_ERROR":
       return {
         ...state,
         error: null,
@@ -85,36 +85,37 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // 初始化时检查本地存储的认证信息
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const token = localStorage.getItem('authToken');
-        const userData = localStorage.getItem('user');
+        const token = localStorage.getItem("authToken");
+        const userData = localStorage.getItem("user");
 
         if (token && userData) {
           // 验证token是否有效
           try {
             const profile = await apiService.getProfile();
             dispatch({
-              type: 'LOGIN_SUCCESS',
+              type: "LOGIN_SUCCESS",
               payload: { user: profile, token },
             });
           } catch (error) {
+            console.error("Token verification failed:", error);
             // Token无效，清除本地存储
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            dispatch({ type: 'LOGOUT' });
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("user");
+            dispatch({ type: "LOGOUT" });
           }
         } else {
-          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: "SET_LOADING", payload: false });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Auth initialization error:", error);
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     };
 
@@ -122,52 +123,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (credentials: LoginRequest) => {
-    dispatch({ type: 'LOGIN_START' });
+    dispatch({ type: "LOGIN_START" });
     try {
       const response = await apiService.login(credentials);
-      
+
       // 保存到本地存储
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
+      localStorage.setItem("authToken", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
       // 设置API服务的token
       apiService.setAuthToken(response.token);
-      
+
       dispatch({
-        type: 'LOGIN_SUCCESS',
+        type: "LOGIN_SUCCESS",
         payload: { user: response.user, token: response.token },
       });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || '登录失败';
-      dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
+    } catch (error: unknown) {
+      let errorMessage = "登录失败";
+
+      if (error && typeof error === "object") {
+        // 新的v2.0 API错误格式
+        if ("message" in error && typeof error.message === "string") {
+          errorMessage = error.message;
+        }
+        // 兼容旧的错误格式
+        else if (
+          "response" in error &&
+          error.response &&
+          typeof error.response === "object"
+        ) {
+          const response = error.response as {
+            data?: { message?: string; messages?: string };
+          };
+          errorMessage =
+            response.data?.messages || response.data?.message || "登录失败";
+        }
+      }
+
+      dispatch({ type: "LOGIN_FAILURE", payload: errorMessage });
       throw error;
     }
   };
 
   const logout = async () => {
-    dispatch({ type: 'LOGOUT_START' });
+    dispatch({ type: "LOGOUT_START" });
     try {
       // Call the logout API
       await apiService.logout();
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      console.error("Logout API call failed:", error);
       // Continue with logout even if API call fails
     } finally {
       // Clear local state regardless of API call result
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
       apiService.removeAuthToken();
-      dispatch({ type: 'LOGOUT' });
+      dispatch({ type: "LOGOUT" });
     }
   };
 
   const refreshToken = async () => {
     try {
       const profile = await apiService.getProfile();
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       if (token) {
         dispatch({
-          type: 'LOGIN_SUCCESS',
+          type: "LOGIN_SUCCESS",
           payload: { user: profile, token },
         });
       }
@@ -176,7 +197,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   };
-
 
   const contextValue: AuthContextType = {
     user: state.user,
@@ -189,18 +209,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-
+export { AuthProvider };
 export default AuthContext;

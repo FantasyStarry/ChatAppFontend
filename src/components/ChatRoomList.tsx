@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   List,
@@ -19,15 +19,10 @@ import {
   Chip,
   Skeleton,
   Alert,
-} from '@mui/material';
-import {
-  Chat,
-  Add,
-  Group,
-  Refresh,
-} from '@mui/icons-material';
-import { useChat } from '../contexts/ChatContext';
-import type { ChatRoom, CreateChatRoomRequest } from '../types';
+} from "@mui/material";
+import { Chat, Add, Group, Refresh } from "@mui/icons-material";
+import { useChat } from "../hooks/useChat";
+import type { ChatRoom, CreateChatRoomRequest } from "../types";
 
 const ChatRoomList: React.FC = () => {
   const {
@@ -41,11 +36,11 @@ const ChatRoomList: React.FC = () => {
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newRoomData, setNewRoomData] = useState<CreateChatRoomRequest>({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
   });
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
   const handleRoomSelect = (room: ChatRoom) => {
     setCurrentRoom(room);
@@ -53,19 +48,33 @@ const ChatRoomList: React.FC = () => {
 
   const handleCreateRoom = async () => {
     if (!newRoomData.name.trim()) {
-      setError('请输入房间名称');
+      setError("请输入房间名称");
       return;
     }
 
     setCreating(true);
-    setError('');
+    setError("");
 
     try {
       await createRoom(newRoomData);
       setCreateDialogOpen(false);
-      setNewRoomData({ name: '', description: '' });
-    } catch (err: any) {
-      setError(err.response?.data?.message || '创建房间失败');
+      setNewRoomData({ name: "", description: "" });
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : (
+              err as {
+                response?: { data?: { message?: string; messages?: string } };
+              }
+            )?.response?.data?.message ||
+            (
+              err as {
+                response?: { data?: { message?: string; messages?: string } };
+              }
+            )?.response?.data?.messages ||
+            "创建房间失败";
+      setError(errorMessage);
     } finally {
       setCreating(false);
     }
@@ -82,18 +91,18 @@ const ChatRoomList: React.FC = () => {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
-      return date.toLocaleTimeString('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit',
+      return date.toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } else if (days === 1) {
-      return '昨天';
+      return "昨天";
     } else if (days < 7) {
       return `${days}天前`;
     } else {
-      return date.toLocaleDateString('zh-CN', {
-        month: 'numeric',
-        day: 'numeric',
+      return date.toLocaleDateString("zh-CN", {
+        month: "numeric",
+        day: "numeric",
       });
     }
   };
@@ -103,16 +112,16 @@ const ChatRoomList: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* 头部操作栏 */}
       <Box
         sx={{
           p: 2,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           borderBottom: 1,
-          borderColor: 'divider',
+          borderColor: "divider",
         }}
       >
         <Typography variant="h6" fontWeight="bold">
@@ -131,13 +140,17 @@ const ChatRoomList: React.FC = () => {
       </Box>
 
       {/* 房间列表 */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ flex: 1, overflow: "auto" }}>
         {isLoading && rooms.length === 0 ? (
           // 加载骨架
           <Box sx={{ p: 1 }}>
             {Array.from({ length: 5 }).map((_, index) => (
               <Box key={index} sx={{ p: 1 }}>
-                <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+                <Skeleton
+                  variant="rectangular"
+                  height={72}
+                  sx={{ borderRadius: 2 }}
+                />
               </Box>
             ))}
           </Box>
@@ -146,35 +159,29 @@ const ChatRoomList: React.FC = () => {
           <Box
             sx={{
               p: 4,
-              textAlign: 'center',
-              color: 'text.secondary',
+              textAlign: "center",
+              color: "text.secondary",
             }}
           >
             <Chat sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
-            <Typography variant="body2">
-              暂无聊天室
-            </Typography>
-            <Typography variant="caption">
-              点击 + 创建第一个聊天室
-            </Typography>
+            <Typography variant="body2">暂无聊天室</Typography>
+            <Typography variant="caption">点击 + 创建第一个聊天室</Typography>
           </Box>
         ) : (
           <List sx={{ p: 1 }}>
             {rooms.map((room) => (
-              <ListItem
-                key={room.id}
-                disablePadding
-                sx={{ mb: 0.5 }}
-              >
+              <ListItem key={room.id} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
                   selected={currentRoom?.id === room.id}
                   onClick={() => handleRoomSelect(room)}
                   sx={{
                     borderRadius: 2,
-                    '&.Mui-selected': {
-                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)',
+                    "&.Mui-selected": {
+                      background:
+                        "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)",
                       },
                     },
                   }}
@@ -182,10 +189,10 @@ const ChatRoomList: React.FC = () => {
                   <ListItemAvatar>
                     <Avatar
                       sx={{
-                        bgcolor: 'primary.main',
+                        bgcolor: "primary.main",
                         width: 48,
                         height: 48,
-                        fontWeight: 'bold',
+                        fontWeight: "bold",
                       }}
                     >
                       {getRoomAvatar(room)}
@@ -193,14 +200,21 @@ const ChatRoomList: React.FC = () => {
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          mb: 0.5,
+                        }}
+                      >
                         <Typography
                           variant="subtitle2"
                           fontWeight="bold"
                           sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                             flex: 1,
                           }}
                         >
@@ -212,7 +226,7 @@ const ChatRoomList: React.FC = () => {
                             label={room.memberCount}
                             icon={<Group />}
                             variant="outlined"
-                            sx={{ height: 20, fontSize: '0.7rem' }}
+                            sx={{ height: 20, fontSize: "0.7rem" }}
                           />
                         )}
                       </Box>
@@ -225,15 +239,19 @@ const ChatRoomList: React.FC = () => {
                               variant="body2"
                               color="text.secondary"
                               sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {room.lastMessage.user.username}: {room.lastMessage.content}
+                              {room.lastMessage.user.username}:{" "}
+                              {room.lastMessage.content}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatTime(room.lastMessage.timestamp)}
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {formatTime(room.lastMessage.created_at)}
                             </Typography>
                           </Box>
                         ) : room.description ? (
@@ -241,9 +259,9 @@ const ChatRoomList: React.FC = () => {
                             variant="body2"
                             color="text.secondary"
                             sx={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {room.description}
@@ -271,9 +289,9 @@ const ChatRoomList: React.FC = () => {
           onClick={() => setCreateDialogOpen(true)}
           size="medium"
           sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            "&:hover": {
+              background: "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
             },
           }}
         >
@@ -310,7 +328,7 @@ const ChatRoomList: React.FC = () => {
             variant="outlined"
             value={newRoomData.name}
             onChange={(e) =>
-              setNewRoomData(prev => ({ ...prev, name: e.target.value }))
+              setNewRoomData((prev) => ({ ...prev, name: e.target.value }))
             }
             disabled={creating}
             sx={{ mb: 2 }}
@@ -324,7 +342,10 @@ const ChatRoomList: React.FC = () => {
             variant="outlined"
             value={newRoomData.description}
             onChange={(e) =>
-              setNewRoomData(prev => ({ ...prev, description: e.target.value }))
+              setNewRoomData((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
             }
             disabled={creating}
           />
@@ -341,13 +362,13 @@ const ChatRoomList: React.FC = () => {
             variant="contained"
             disabled={creating || !newRoomData.name.trim()}
             sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
               },
             }}
           >
-            {creating ? '创建中...' : '创建'}
+            {creating ? "创建中..." : "创建"}
           </Button>
         </DialogActions>
       </Dialog>

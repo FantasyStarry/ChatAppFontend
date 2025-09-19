@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -10,15 +10,11 @@ import {
   Alert,
   Tooltip,
   Divider,
-} from '@mui/material';
-import {
-  Send,
-  EmojiEmotions,
-  Schedule,
-} from '@mui/icons-material';
-import { useChat } from '../contexts/ChatContext';
-import { useAuth } from '../contexts/AuthContext';
-import type { FrontendMessage } from '../types';
+} from "@mui/material";
+import { Send, EmojiEmotions, Schedule } from "@mui/icons-material";
+import { useChat } from "../hooks/useChat";
+import { useAuth } from "../hooks/useAuth";
+import type { FrontendMessage } from "../types";
 
 // 日期格式化工具函数
 const formatMessageDate = (timestamp: string): string => {
@@ -26,37 +22,40 @@ const formatMessageDate = (timestamp: string): string => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   const isToday = date.toDateString() === today.toDateString();
   const isYesterday = date.toDateString() === yesterday.toDateString();
-  
+
   if (isToday) {
-    return '今天';
+    return "今天";
   } else if (isYesterday) {
-    return '昨天';
+    return "昨天";
   } else {
-    return date.toLocaleDateString('zh-CN', {
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("zh-CN", {
+      month: "long",
+      day: "numeric",
     });
   }
 };
 
 const formatMessageTime = (timestamp: string): string => {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
 // Check if date separator should be shown
-const shouldShowDateSeparator = (currentMessage: FrontendMessage, previousMessage?: FrontendMessage): boolean => {
+const shouldShowDateSeparator = (
+  currentMessage: FrontendMessage,
+  previousMessage?: FrontendMessage
+): boolean => {
   if (!previousMessage) return true;
-  
+
   const currentDate = new Date(currentMessage.timestamp).toDateString();
   const previousDate = new Date(previousMessage.timestamp).toDateString();
-  
+
   return currentDate !== previousDate;
 };
 
@@ -65,8 +64,8 @@ const DateSeparator: React.FC<{ timestamp: string }> = ({ timestamp }) => {
   return (
     <Box
       sx={{
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         my: 3,
         px: 2,
       }}
@@ -78,10 +77,10 @@ const DateSeparator: React.FC<{ timestamp: string }> = ({ timestamp }) => {
           mx: 2,
           px: 2,
           py: 0.5,
-          backgroundColor: 'action.hover',
+          backgroundColor: "action.hover",
           borderRadius: 2,
-          color: 'text.secondary',
-          fontSize: '0.75rem',
+          color: "text.secondary",
+          fontSize: "0.75rem",
         }}
       >
         {formatMessageDate(timestamp)}
@@ -100,10 +99,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: isOwn ? 'row-reverse' : 'row',
+        display: "flex",
+        flexDirection: isOwn ? "row-reverse" : "row",
         mb: 2.5, // 增加消息间距
-        alignItems: 'flex-start', // 改为顶部对齐
+        alignItems: "flex-start", // 改为顶部对齐
         gap: 1.5, // 增加间距
       }}
     >
@@ -112,8 +111,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
         sx={{
           width: 36, // 稍微增大头像
           height: 36,
-          bgcolor: 'primary.main',
-          fontSize: '0.875rem',
+          bgcolor: "primary.main",
+          fontSize: "0.875rem",
           mt: 0.5, // 稍微向下偏移对齐用户名
         }}
       >
@@ -123,19 +122,19 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
       {/* 消息内容区域 */}
       <Box
         sx={{
-          maxWidth: '70%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: isOwn ? 'flex-end' : 'flex-start',
+          maxWidth: "70%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isOwn ? "flex-end" : "flex-start",
         }}
       >
         {/* 用户名 - 每条消息都显示 */}
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ 
-            mb: 0.5, 
-            fontSize: '0.75rem',
+          sx={{
+            mb: 0.5,
+            fontSize: "0.75rem",
             fontWeight: 500,
             px: 0.5, // 添加水平边距
           }}
@@ -146,10 +145,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
         {/* 消息气泡和时间 */}
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'flex-end',
+            display: "flex",
+            alignItems: "flex-end",
             gap: 1,
-            flexDirection: isOwn ? 'row-reverse' : 'row',
+            flexDirection: isOwn ? "row-reverse" : "row",
           }}
         >
           {/* 消息气泡 */}
@@ -159,38 +158,38 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
               p: 1.5,
               borderRadius: 1.5,
               background: isOwn
-                ? '#07C160' // WeChat green
-                : '#FFFFFF',
-              color: isOwn ? 'white' : 'text.primary',
-              position: 'relative',
-              border: isOwn ? 'none' : '1px solid #E5E5E5',
-              maxWidth: '100%',
-              wordBreak: 'break-word',
-              boxShadow: isOwn 
-                ? '0 2px 8px rgba(7, 193, 96, 0.15)'
-                : '0 2px 4px rgba(0, 0, 0, 0.1)',
+                ? "#07C160" // WeChat green
+                : "#FFFFFF",
+              color: isOwn ? "white" : "text.primary",
+              position: "relative",
+              border: isOwn ? "none" : "1px solid #E5E5E5",
+              maxWidth: "100%",
+              wordBreak: "break-word",
+              boxShadow: isOwn
+                ? "0 2px 8px rgba(7, 193, 96, 0.15)"
+                : "0 2px 4px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 lineHeight: 1.4,
-                fontSize: '0.9rem',
+                fontSize: "0.9rem",
               }}
             >
               {message.content}
             </Typography>
           </Paper>
-          
+
           {/* 时间显示 */}
           <Typography
             variant="caption"
             sx={{
-              color: 'text.secondary',
-              fontSize: '0.7rem',
+              color: "text.secondary",
+              fontSize: "0.7rem",
               opacity: 0.8,
-              minWidth: 'fit-content',
-              whiteSpace: 'nowrap',
+              minWidth: "fit-content",
+              whiteSpace: "nowrap",
             }}
           >
             {formatMessageTime(message.timestamp)}
@@ -206,28 +205,31 @@ interface MessageInputProps {
   disabled?: boolean;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) => {
-  const [message, setMessage] = useState('');
+const MessageInput: React.FC<MessageInputProps> = ({
+  onSendMessage,
+  disabled,
+}) => {
+  const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!message.trim() || sending || disabled) return;
 
     setSending(true);
     try {
       await onSendMessage(message.trim());
-      setMessage('');
+      setMessage("");
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error("Failed to send message:", error);
     } finally {
       setSending(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -240,11 +242,15 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
         p: 2,
         m: 2,
         borderRadius: 2, // Reduced border radius
-        border: '1px solid #E5E5E5',
-        backgroundColor: '#FAFAFA',
+        border: "1px solid #E5E5E5",
+        backgroundColor: "#FAFAFA",
       }}
     >
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', gap: 1 }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: "flex", gap: 1 }}
+      >
         <TextField
           fullWidth
           multiline
@@ -257,32 +263,32 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
           variant="outlined"
           size="small"
           sx={{
-            '& .MuiOutlinedInput-root': {
+            "& .MuiOutlinedInput-root": {
               borderRadius: 1.5, // Reduced border radius
-              backgroundColor: 'white',
-              '& fieldset': {
-                borderColor: '#E5E5E5',
+              backgroundColor: "white",
+              "& fieldset": {
+                borderColor: "#E5E5E5",
               },
-              '&:hover fieldset': {
-                borderColor: '#07C160', // WeChat green
+              "&:hover fieldset": {
+                borderColor: "#07C160", // WeChat green
               },
-              '&.Mui-focused fieldset': {
-                borderColor: '#07C160', // WeChat green
+              "&.Mui-focused fieldset": {
+                borderColor: "#07C160", // WeChat green
               },
             },
           }}
         />
-        
+
         {/* Emoji button (reserved) */}
         <Tooltip title="表情">
           <IconButton
             size="small"
             disabled={disabled}
-            sx={{ 
-              alignSelf: 'flex-end',
-              color: 'text.secondary',
-              '&:hover': {
-                color: '#07C160', // WeChat green
+            sx={{
+              alignSelf: "flex-end",
+              color: "text.secondary",
+              "&:hover": {
+                color: "#07C160", // WeChat green
               },
             }}
           >
@@ -296,19 +302,23 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
             type="submit"
             disabled={!message.trim() || sending || disabled}
             sx={{
-              bgcolor: '#07C160', // WeChat green
-              color: 'white',
-              alignSelf: 'flex-end',
-              '&:hover': {
-                bgcolor: '#06A050', // Darker green
+              bgcolor: "#07C160", // WeChat green
+              color: "white",
+              alignSelf: "flex-end",
+              "&:hover": {
+                bgcolor: "#06A050", // Darker green
               },
-              '&:disabled': {
-                bgcolor: '#E5E5E5',
-                color: '#BDBDBD',
+              "&:disabled": {
+                bgcolor: "#E5E5E5",
+                color: "#BDBDBD",
               },
             }}
           >
-            {sending ? <CircularProgress size={20} color="inherit" /> : <Send />}
+            {sending ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <Send />
+            )}
           </IconButton>
         </Tooltip>
       </Box>
@@ -317,14 +327,20 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled }) 
 };
 
 const ChatMessages: React.FC = () => {
-  const { currentRoom, messages = [], isConnected, isLoading, sendMessage } = useChat();
+  const {
+    currentRoom,
+    messages = [],
+    isConnected,
+    isLoading,
+    sendMessage,
+  } = useChat();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -335,12 +351,12 @@ const ChatMessages: React.FC = () => {
     return (
       <Box
         sx={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          color: 'text.secondary',
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          color: "text.secondary",
           p: 4,
         }}
       >
@@ -358,10 +374,10 @@ const ChatMessages: React.FC = () => {
   return (
     <Box
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.default',
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
       }}
     >
       {/* 连接状态提示 */}
@@ -370,9 +386,9 @@ const ChatMessages: React.FC = () => {
           severity="warning"
           sx={{
             borderRadius: 0,
-            '& .MuiAlert-message': {
-              display: 'flex',
-              alignItems: 'center',
+            "& .MuiAlert-message": {
+              display: "flex",
+              alignItems: "center",
               gap: 1,
             },
           }}
@@ -387,48 +403,50 @@ const ChatMessages: React.FC = () => {
         ref={messagesContainerRef}
         sx={{
           flex: 1,
-          overflow: 'auto',
+          overflow: "auto",
           p: 2,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {isLoading && messages.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
             <CircularProgress />
           </Box>
         ) : messages.length === 0 ? (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              color: 'text.secondary',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "column",
+              color: "text.secondary",
             }}
           >
             <EmojiEmotions sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
             <Typography variant="body1" gutterBottom>
               开始对话吧！
             </Typography>
-            <Typography variant="body2">
-              发送第一条消息来开始聊天
-            </Typography>
+            <Typography variant="body2">发送第一条消息来开始聊天</Typography>
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             {messages.map((message, index) => {
-              const previousMessage = index > 0 ? messages[index - 1] : undefined;
-              const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
-              
+              const previousMessage =
+                index > 0 ? messages[index - 1] : undefined;
+              const showDateSeparator = shouldShowDateSeparator(
+                message,
+                previousMessage
+              );
+
               return (
                 <React.Fragment key={message.id}>
                   {/* Date separator - only show if messages are from different days */}
                   {showDateSeparator && (
                     <DateSeparator timestamp={message.timestamp} />
                   )}
-                  
+
                   {/* Message item */}
                   <MessageItem
                     message={message}
@@ -443,11 +461,8 @@ const ChatMessages: React.FC = () => {
       </Box>
 
       {/* 输入区域 */}
-      <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
-        <MessageInput
-          onSendMessage={sendMessage}
-          disabled={!isConnected}
-        />
+      <Box sx={{ borderTop: 1, borderColor: "divider" }}>
+        <MessageInput onSendMessage={sendMessage} disabled={!isConnected} />
       </Box>
     </Box>
   );
