@@ -22,6 +22,7 @@ import {
   Settings,
   People,
   ChatBubble,
+  Folder,
 } from "@mui/icons-material";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
@@ -75,6 +76,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const handleUserManagement = () => {
     handleMenuClose();
     navigate("/user-management");
+  };
+
+  const handleFileManagement = () => {
+    handleMenuClose();
+    navigate("/files");
   };
 
   const drawer = (
@@ -285,6 +291,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <MenuItem onClick={handleMenuClose}>
           <AccountCircle sx={{ mr: 2 }} />
           个人资料
+        </MenuItem>
+        <MenuItem onClick={handleFileManagement}>
+          <Folder sx={{ mr: 2 }} />
+          文件管理
         </MenuItem>
         {user?.role === "admin" && (
           <MenuItem onClick={handleUserManagement}>

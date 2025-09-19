@@ -11,6 +11,11 @@ import type {
   PaginatedResponse,
   User,
   ApiResponse,
+  FileInfo,
+  FileUploadResponse,
+  FileDownloadResponse,
+  FileListParams,
+  FileListResponse,
 } from "../types";
 import { API_RESPONSE_CODES } from "../types";
 
@@ -254,6 +259,128 @@ class ApiService {
 
   isAuthenticated(): boolean {
     return !!this.getAuthToken();
+  }
+
+  // 文件管理相关API
+  async uploadFile(
+    file: File,
+    chatroomId: number,
+    onProgress?: (progress: number) => void
+  ): Promise<FileInfo> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("chatroom_id", chatroomId.toString());
+
+    const response: AxiosResponse<ApiResponse<FileUploadResponse>> =
+      await this.api.post("/files/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(progress);
+          }
+        },
+      });
+
+    const uploadResult = this.handleApiResponse(response.data);
+
+    // Convert to FileInfo format
+    return {
+      ...uploadResult,
+      uploader_id: uploadResult.uploader_id,
+      chatroom_id: uploadResult.chatroom_id,
+    } as FileInfo;
+  }
+
+  async getFileDownloadUrl(fileId: number): Promise<FileDownloadResponse> {
+    const response: AxiosResponse<ApiResponse<FileDownloadResponse>> =
+      await this.api.get(`/files/download/${fileId}`);
+    return this.handleApiResponse(response.data);
+  }
+
+  async downloadFile(fileId: number): Promise<void> {
+    const downloadResponse = await this.getFileDownloadUrl(fileId);
+
+    // 创建下载链接
+    const link = document.createElement("a");
+    link.href = downloadResponse.download_url;
+    link.download = downloadResponse.file_info.file_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async deleteFile(fileId: number): Promise<void> {
+    const response: AxiosResponse<ApiResponse<null>> = await this.api.delete(
+      `/files/${fileId}`
+    );
+    this.handleApiResponse(response.data);
+  }
+
+  async getFileInfo(fileId: number): Promise<FileInfo> {
+    const response: AxiosResponse<ApiResponse<FileInfo>> = await this.api.get(
+      `/files/${fileId}`
+    );
+    return this.handleApiResponse(response.data);
+  }
+
+  async getChatroomFiles(
+    chatroomId: number,
+    params?: FileListParams
+  ): Promise<FileListResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.page_size)
+      queryParams.append("page_size", params.page_size.toString());
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.file_type) queryParams.append("file_type", params.file_type);
+    if (params?.uploader_id)
+      queryParams.append("uploader_id", params.uploader_id.toString());
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+
+    const response: AxiosResponse<ApiResponse<FileListResponse>> =
+      await this.api.get(
+        `/files/chatroom/${chatroomId}?${queryParams.toString()}`
+      );
+    return this.handleApiResponse(response.data);
+  }
+
+  async getMyFiles(): Promise<FileInfo[]> {
+    const response: AxiosResponse<ApiResponse<FileInfo[]>> = await this.api.get(
+      "/files/my"
+    );
+    return this.handleApiResponse(response.data);
+  }
+
+  // 批量文件操作
+  async deleteFiles(fileIds: number[]): Promise<void> {
+    const deletePromises = fileIds.map((id) => this.deleteFile(id));
+    await Promise.all(deletePromises);
+  }
+
+  async downloadFiles(fileIds: number[]): Promise<void> {
+    const downloadPromises = fileIds.map((id) => this.downloadFile(id));
+    await Promise.all(downloadPromises);
+  }
+
+  // 获取上传预签名URL（如果后端支持）
+  async getUploadUrl(
+    filename: string,
+    chatroomId: number
+  ): Promise<{ upload_url: string; object_path: string }> {
+    const response: AxiosResponse<
+      ApiResponse<{ upload_url: string; object_path: string }>
+    > = await this.api.get(
+      `/files/upload-url?filename=${encodeURIComponent(
+        filename
+      )}&chatroom_id=${chatroomId}`
+    );
+    return this.handleApiResponse(response.data);
   }
 }
 

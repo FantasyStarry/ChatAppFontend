@@ -10,11 +10,22 @@ import {
   Alert,
   Tooltip,
   Divider,
+  Drawer,
 } from "@mui/material";
-import { Send, EmojiEmotions, Schedule } from "@mui/icons-material";
+import {
+  Send,
+  EmojiEmotions,
+  Schedule,
+  AttachFile,
+  Close,
+} from "@mui/icons-material";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
-import type { FrontendMessage } from "../types";
+import FileUpload from "./FileUpload";
+import FileList from "./FileList";
+import FilePreview from "./FilePreview";
+import type { FrontendMessage, FileInfo } from "../types";
+import { apiService } from "../services/api";
 
 // 日期格式化工具函数
 const formatMessageDate = (timestamp: string): string => {
@@ -279,6 +290,23 @@ const MessageInput: React.FC<MessageInputProps> = ({
           }}
         />
 
+        <Tooltip title="附件">
+          <IconButton
+            onClick={() => setFileDrawerOpen(true)}
+            size="small"
+            disabled={disabled}
+            sx={{
+              alignSelf: "flex-end",
+              color: "text.secondary",
+              "&:hover": {
+                color: "#07C160", // WeChat green
+              },
+            }}
+          >
+            <AttachFile />
+          </IconButton>
+        </Tooltip>
+
         {/* Emoji button (reserved) */}
         <Tooltip title="表情">
           <IconButton
@@ -338,6 +366,11 @@ const ChatMessages: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // 文件面板状态
+  const [fileDrawerOpen, setFileDrawerOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
+  const [showUploadArea, setShowUploadArea] = useState(false);
+
   // 自动滚动到底部
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -346,6 +379,82 @@ const ChatMessages: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 文件相关处理函数
+  const handleFileUploadComplete = async (files: FileInfo[]) => {
+    console.log("文件上传完成:", files);
+
+    // 在聊天记录中显示文件上传消息
+    for (const file of files) {
+      const fileMessage = `[文件] ${file.file_name} (${formatFileSize(
+        file.file_size
+      )})`;
+      try {
+        await sendMessage(fileMessage);
+      } catch (error) {
+        console.error("发送文件消息失败:", error);
+      }
+    }
+
+    setShowUploadArea(false);
+  };
+
+  const handleFileUploadError = (error: string) => {
+    console.error("文件上传错误:", error);
+    alert(`上传失败: ${error}`);
+  };
+
+  const handleFilePreview = (file: FileInfo) => {
+    setSelectedFile(file);
+  };
+
+  const handleFileDownload = async (file: FileInfo) => {
+    try {
+      await apiService.downloadFile(file.id);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "下载失败";
+      alert(`下载失败: ${errorMessage}`);
+    }
+  };
+
+  const handleFileDelete = async (file: FileInfo) => {
+    try {
+      await apiService.deleteFile(file.id);
+      alert("文件删除成功");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "删除失败";
+      alert(`删除失败: ${errorMessage}`);
+    }
+  };
+
+  const handleBatchDownload = async (files: FileInfo[]) => {
+    try {
+      await apiService.downloadFiles(files.map((f) => f.id));
+      alert(`开始下载 ${files.length} 个文件`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "批量下载失败";
+      alert(`批量下载失败: ${errorMessage}`);
+    }
+  };
+
+  const handleBatchDelete = async (files: FileInfo[]) => {
+    try {
+      await apiService.deleteFiles(files.map((f) => f.id));
+      alert(`成功删除 ${files.length} 个文件`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "批量删除失败";
+      alert(`批量删除失败: ${errorMessage}`);
+    }
+  };
+
+  // 格式化文件大小
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   if (!currentRoom) {
     return (
@@ -464,6 +573,86 @@ const ChatMessages: React.FC = () => {
       <Box sx={{ borderTop: 1, borderColor: "divider" }}>
         <MessageInput onSendMessage={sendMessage} disabled={!isConnected} />
       </Box>
+
+      {/* 文件面板 */}
+      <Drawer
+        anchor="right"
+        open={fileDrawerOpen}
+        onClose={() => setFileDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 400,
+            maxWidth: "90vw",
+          },
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">文件管理</Typography>
+            <IconButton onClick={() => setFileDrawerOpen(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {currentRoom?.name} - 聊天室文件
+          </Typography>
+        </Box>
+
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <button
+              onClick={() => setShowUploadArea(!showUploadArea)}
+              className={`px-3 py-1 text-sm rounded ${
+                showUploadArea
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {showUploadArea ? "隐藏上传" : "上传文件"}
+            </button>
+          </Box>
+        </Box>
+
+        {/* 文件上传区域 */}
+        {showUploadArea && currentRoom && (
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+            <FileUpload
+              chatroomId={currentRoom.id}
+              onUploadComplete={handleFileUploadComplete}
+              onUploadError={handleFileUploadError}
+              maxFileSize={50}
+            />
+          </Box>
+        )}
+
+        {/* 文件列表 */}
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          {currentRoom && (
+            <FileList
+              chatroomId={currentRoom.id}
+              onFilePreview={handleFilePreview}
+              onFileDownload={handleFileDownload}
+              onFileDelete={handleFileDelete}
+              onBatchDownload={handleBatchDownload}
+              onBatchDelete={handleBatchDelete}
+              className="p-4"
+            />
+          )}
+        </Box>
+      </Drawer>
+
+      {/* 文件预览 */}
+      <FilePreview
+        file={selectedFile}
+        onClose={() => setSelectedFile(null)}
+        onDownload={handleFileDownload}
+      />
     </Box>
   );
 };

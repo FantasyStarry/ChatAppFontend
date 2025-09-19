@@ -263,3 +263,121 @@ export interface UserManagementResponse {
     newThisWeek: number;
   };
 }
+
+// File Management types
+export interface FileInfo {
+  id: number;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  content_type: string;
+  chatroom_id: number;
+  uploader_id: number;
+  uploader?: User;
+  chatroom?: ChatRoom;
+  uploaded_at: string;
+  created_at: string;
+}
+
+export interface FileUploadRequest {
+  chatroom_id: number;
+  file: File;
+}
+
+export interface FileUploadResponse {
+  id: number;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  content_type: string;
+  chatroom_id: number;
+  uploader_id: number;
+  uploaded_at: string;
+  created_at: string;
+}
+
+export interface FileDownloadResponse {
+  download_url: string;
+  file_info: FileInfo;
+}
+
+export interface FileListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  file_type?: string;
+  uploader_id?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface FileListResponse {
+  files: FileInfo[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface FileUploadProgress {
+  id: string;
+  file: File;
+  progress: number;
+  status: "pending" | "uploading" | "completed" | "error";
+  error?: string;
+  result?: FileInfo;
+}
+
+export interface FilePreviewData {
+  file: FileInfo;
+  previewUrl?: string;
+  canPreview: boolean;
+  fileType: "image" | "pdf" | "document" | "other";
+}
+
+export interface FileBatchOperation {
+  action: "delete" | "download";
+  fileIds: number[];
+}
+
+export interface FileSearchFilters {
+  search: string;
+  fileType: "all" | "image" | "document" | "other";
+  uploaderId: number | null;
+  dateRange: {
+    start: string | null;
+    end: string | null;
+  };
+}
+
+// File Management Context types
+export interface FileContextType {
+  files: FileInfo[];
+  uploadQueue: FileUploadProgress[];
+  isLoading: boolean;
+  error: string | null;
+
+  // File operations
+  uploadFiles: (files: File[], chatroomId: number) => Promise<void>;
+  deleteFile: (fileId: number) => Promise<void>;
+  deleteFiles: (fileIds: number[]) => Promise<void>;
+  downloadFile: (fileId: number) => Promise<void>;
+  downloadFiles: (fileIds: number[]) => Promise<void>;
+
+  // File listing
+  loadFiles: (chatroomId?: number, params?: FileListParams) => Promise<void>;
+  loadMyFiles: () => Promise<void>;
+
+  // Search and filter
+  searchFiles: (
+    filters: FileSearchFilters,
+    chatroomId?: number
+  ) => Promise<void>;
+
+  // Preview
+  getFilePreview: (file: FileInfo) => FilePreviewData;
+
+  // Clear operations
+  clearUploadQueue: () => void;
+  clearError: () => void;
+}
