@@ -1,0 +1,38 @@
+{
+  "code": 1000,
+  "messages": "文件上传成功",
+  "data": {
+    "id": 3,
+    "file_name": "AMFTrace.log",
+    "file_path": "chatroom-1/1758282488-AMFTrace.log",
+    "file_size": 2,
+    "content_type": "application/octet-stream",
+    "chat_room_id": 1,
+    "uploader_id": 2,
+    "uploaded_at": "2025-09-19T19:48:08.9960061+08:00",
+    "created_at": "2025-09-19T19:48:08.9960061+08:00",
+    "updated_at": "2025-09-19T19:48:08.9960061+08:00",
+    "chatroom": {
+      "id": 0,
+      "name": "",
+      "description": "",
+      "created_by": 0,
+      "creator": {
+        "id": 0,
+        "username": "",
+        "email": "",
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      },
+      "created_at": "0001-01-01T00:00:00Z",
+      "updated_at": "0001-01-01T00:00:00Z"
+    },
+    "uploader": {
+      "id": 0,
+      "username": "",
+      "email": "",
+      "created_at": "0001-01-01T00:00:00Z",
+      "updated_at": "0001-01-01T00:00:00Z"
+    }
+  }
+}

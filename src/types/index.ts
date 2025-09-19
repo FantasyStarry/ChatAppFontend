@@ -271,13 +271,20 @@ export interface FileInfo {
   file_path: string;
   file_size: number;
   content_type: string;
-  chatroom_id: number;
+  // Handle both possible field naming conventions from backend
+  chatroom_id?: number;
+  chat_room_id?: number;
   uploader_id: number;
   uploader?: User;
   chatroom?: ChatRoom;
   uploaded_at: string;
   created_at: string;
 }
+
+// Helper function to get chatroom ID regardless of field naming
+export const getFileCharoomId = (file: FileInfo): number => {
+  return file.chatroom_id || file.chat_room_id || 0;
+};
 
 export interface FileUploadRequest {
   chatroom_id: number;
@@ -290,7 +297,9 @@ export interface FileUploadResponse {
   file_path: string;
   file_size: number;
   content_type: string;
-  chatroom_id: number;
+  // Handle both possible field naming conventions from backend
+  chatroom_id?: number;
+  chat_room_id?: number;
   uploader_id: number;
   uploaded_at: string;
   created_at: string;

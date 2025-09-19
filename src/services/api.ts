@@ -288,12 +288,16 @@ class ApiService {
 
     const uploadResult = this.handleApiResponse(response.data);
 
-    // Convert to FileInfo format
-    return {
+    // Convert to FileInfo format - handle both field naming conventions
+    const fileInfo: FileInfo = {
       ...uploadResult,
       uploader_id: uploadResult.uploader_id,
-      chatroom_id: uploadResult.chatroom_id,
-    } as FileInfo;
+      // Ensure we have both field names for compatibility
+      chatroom_id: (uploadResult as any).chatroom_id || (uploadResult as any).chat_room_id,
+      chat_room_id: (uploadResult as any).chat_room_id || (uploadResult as any).chatroom_id,
+    };
+    
+    return fileInfo;
   }
 
   async getFileDownloadUrl(fileId: number): Promise<FileDownloadResponse> {
