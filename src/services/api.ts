@@ -306,6 +306,12 @@ class ApiService {
     return this.handleApiResponse(response.data);
   }
 
+  // 获取文件URL用于预览（不触发下载）
+  async getFileUrl(fileId: number): Promise<string> {
+    const downloadResponse = await this.getFileDownloadUrl(fileId);
+    return downloadResponse.download_url;
+  }
+
   async downloadFile(fileId: number): Promise<void> {
     const downloadResponse = await this.getFileDownloadUrl(fileId);
 

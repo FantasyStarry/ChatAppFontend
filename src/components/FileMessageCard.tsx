@@ -19,6 +19,8 @@ import {
   Schedule,
 } from "@mui/icons-material";
 import { apiService } from "../services/api";
+import InlineImageDisplay from "./InlineImageDisplay";
+import InlineVideoDisplay from "./InlineVideoDisplay";
 
 interface FileMessageCardProps {
   fileName: string;
@@ -142,8 +144,14 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // 检查是否为图片文件
+  const isImage = contentType.toLowerCase().startsWith("image/");
+
+  // 检查是否为视频文件
+  const isVideo = contentType.toLowerCase().startsWith("video/");
+
   const handleCardClick = () => {
-    if (fileId && !isDownloading) {
+    if (fileId && !isDownloading && !isImage && !isVideo) {
       handleDownload();
     }
   };
@@ -161,6 +169,38 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
       setIsDownloading(false);
     }
   };
+
+  // 如果是图片文件，直接展示内联图片组件，无需卡片包装
+  if (isImage && fileId) {
+    return (
+      <InlineImageDisplay
+        fileId={fileId}
+        fileName={fileName}
+        fileSize={fileSize}
+        maxWidth={Math.min(500, window.innerWidth * 0.7)} // 增加响应式最大宽度
+        maxHeight={400} // 增加最大高度
+        showControls={true}
+        lazy={true}
+        responsive={true} // 启用响应式调整
+      />
+    );
+  }
+
+  // 如果是视频文件，直接展示内联视频组件，无需卡片包装
+  if (isVideo && fileId) {
+    return (
+      <InlineVideoDisplay
+        fileId={fileId}
+        fileName={fileName}
+        fileSize={fileSize}
+        maxWidth={Math.min(500, window.innerWidth * 0.7)} // 增加响应式最大宽度
+        maxHeight={400} // 增加最大高度
+        showControls={true}
+        muted={true}
+        responsive={true} // 启用响应式调整
+      />
+    );
+  }
 
   return (
     <Box
@@ -218,9 +258,9 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
           }}
         >
           {React.cloneElement(getFileIcon(contentType, fileName), {
-            sx: { 
+            sx: {
               fontSize: 24,
-              ...getFileIcon(contentType, fileName).props.sx 
+              ...getFileIcon(contentType, fileName).props.sx,
             },
           })}
         </Box>
