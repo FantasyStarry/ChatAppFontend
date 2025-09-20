@@ -75,13 +75,17 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
     case "ADD_MESSAGE": {
       // 检查是否已存在相同的消息（防止重复添加）
-      const messageExists = state.messages.some(msg => 
-        msg.id === action.payload.id || 
-        (msg.content === action.payload.content && 
-         msg.userId === action.payload.userId && 
-         Math.abs(new Date(msg.timestamp).getTime() - new Date(action.payload.timestamp).getTime()) < 1000)
+      const messageExists = state.messages.some(
+        (msg) =>
+          msg.id === action.payload.id ||
+          (msg.content === action.payload.content &&
+            msg.userId === action.payload.userId &&
+            Math.abs(
+              new Date(msg.timestamp).getTime() -
+                new Date(action.payload.timestamp).getTime()
+            ) < 1000)
       );
-      
+
       if (messageExists) {
         console.log("消息已存在，跳过添加:", action.payload);
         return state;
@@ -104,13 +108,15 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       const updatedMessages = state.messages.map((msg) =>
         msg.id === action.payload.tempId ? action.payload.newMessage : msg
       );
-      
+
       // 如果没有找到要替换的消息，直接添加新消息
-      const messageFound = state.messages.some(msg => msg.id === action.payload.tempId);
+      const messageFound = state.messages.some(
+        (msg) => msg.id === action.payload.tempId
+      );
       if (!messageFound) {
         updatedMessages.push(action.payload.newMessage);
       }
-      
+
       // 按时间戳排序
       const sortedMessages = updatedMessages.sort(
         (a, b) =>
@@ -402,25 +408,28 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
               if (isOwnMessage) {
                 // 如果是自己的消息，查找并替换临时消息
-                const tempMessageExists = state.messages.some(msg => 
-                  msg.userId === frontendMessage.userId && 
-                  msg.content === frontendMessage.content &&
-                  msg.id > 1000000000000 // 临时ID通常是时间戳，比较大
+                const tempMessageExists = state.messages.some(
+                  (msg) =>
+                    msg.userId === frontendMessage.userId &&
+                    msg.content === frontendMessage.content &&
+                    msg.id > 1000000000000 // 临时ID通常是时间戳，比较大
                 );
-                
+
                 if (tempMessageExists) {
                   // 找到临时消息，用服务器返回的消息替换它
                   console.log("替换临时消息为服务器消息");
-                  dispatch({ 
-                    type: "UPDATE_MESSAGE", 
-                    payload: { 
-                      tempId: state.messages.find(msg => 
-                        msg.userId === frontendMessage.userId && 
-                        msg.content === frontendMessage.content &&
-                        msg.id > 1000000000000
-                      )?.id || 0, 
-                      newMessage: frontendMessage 
-                    } 
+                  dispatch({
+                    type: "UPDATE_MESSAGE",
+                    payload: {
+                      tempId:
+                        state.messages.find(
+                          (msg) =>
+                            msg.userId === frontendMessage.userId &&
+                            msg.content === frontendMessage.content &&
+                            msg.id > 1000000000000
+                        )?.id || 0,
+                      newMessage: frontendMessage,
+                    },
                   });
                 } else {
                   // 没有找到临时消息，可能是页面刷新后收到的消息，直接添加
@@ -442,12 +451,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: "SET_ERROR", payload: "无法连接到聊天室" });
       }
     },
-    [convertMessageToFrontend, isAuthenticated, user?.id]
+    [convertMessageToFrontend, isAuthenticated, state.messages, user?.id]
   );
 
   // 发送消息
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, messageType: "text" | "file" = "text") => {
       if (
         !state.currentRoom ||
         !socketRef.current ||
@@ -466,6 +475,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log("准备发送消息:", {
           content,
+          messageType,
           roomId: state.currentRoom.id,
           user,
         });
@@ -478,23 +488,26 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           userId: user.id,
           user: user,
           timestamp: new Date().toISOString(),
-          type: "text",
+          type: messageType,
         };
 
         // 立即添加到本地状态进行乐观更新
         console.log("立即添加临时消息到本地状态:", tempMessage);
         dispatch({ type: "ADD_MESSAGE", payload: tempMessage });
 
-        // 根据 API 文档格式发送消息
+        // 根据 API 文档格式发送消息，根据消息类型设置WebSocket消息类型
         const message: WebSocketMessage = {
-          type: "message",
+          type: messageType === "file" ? "file" : "message",
           content,
-          chatroom_id: state.currentRoom.id, // Use backend field name
+          chat_room_id: state.currentRoom.id, // Use backend field name
         };
 
         console.log("通过WebSocket发送消息:", message);
+        console.log("messageType参数:", messageType);
+        console.log("计算出的type字段:", messageType === "file" ? "file" : "message");
         console.log("当前房间ID:", state.currentRoom.id);
         console.log("当前房间信息:", state.currentRoom);
+        console.log("最终发送的JSON:", JSON.stringify(message));
         socketRef.current.send(JSON.stringify(message));
       } catch (error: unknown) {
         let errorMessage = "发送消息失败";

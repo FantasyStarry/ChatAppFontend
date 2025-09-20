@@ -226,6 +226,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,6 +237,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
     try {
       await onSendMessage(message.trim());
       setMessage("");
+      // 发送消息后重新聚焦到输入框
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     } catch (error) {
       console.error("Failed to send message:", error);
     } finally {
@@ -267,6 +272,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         sx={{ display: "flex", gap: 1 }}
       >
         <TextField
+          inputRef={inputRef}
           fullWidth
           multiline
           maxRows={4}
@@ -395,11 +401,12 @@ const ChatMessages: React.FC = () => {
 
   // 组件卸载时清理状态
   useEffect(() => {
+    const currentProcessFiles = processedFiles.current;
     return () => {
       setProcessingFiles(false);
       setDraggedFiles([]);
       setPastedFiles([]);
-      processedFiles.current.clear();
+      currentProcessFiles.clear();
     };
   }, []);
 
@@ -438,68 +445,71 @@ const ChatMessages: React.FC = () => {
     dragCounter.current = 0;
 
     if (!currentRoom) {
-      alert('请先选择一个聊天室');
+      alert("请先选择一个聊天室");
       return;
     }
 
     if (processingFiles) {
-      console.log('正在处理文件，忽略重复拖拽');
+      console.log("正在处理文件，忽略重复拖拽");
       return;
     }
 
     const files = Array.from(e.dataTransfer.files);
-    console.log('拖拽文件:', files);
-    
+    console.log("拖拽文件:", files);
+
     if (files.length > 0) {
       setProcessingFiles(true);
       // 打开文件上传区域并传递文件
       setFileDrawerOpen(true);
       setShowUploadArea(true);
-      
+
       // 清空之前的文件再设置新文件
       setPastedFiles([]); // 清空粘贴文件
       setDraggedFiles(files);
-      console.log('设置拖拽文件:', files);
+      console.log("设置拖拽文件:", files);
     }
   };
 
   // 粘贴上传处理
   const handlePaste = async (e: React.ClipboardEvent) => {
-    console.log('粘贴事件触发:', e.clipboardData);
-    
+    console.log("粘贴事件触发:", e.clipboardData);
+
     if (!currentRoom) {
-      console.log('没有当前房间，忽略粘贴事件');
+      console.log("没有当前房间，忽略粘贴事件");
       return;
     }
 
     if (processingFiles) {
-      console.log('正在处理文件，忽略重复粘贴');
+      console.log("正在处理文件，忽略重复粘贴");
       return;
     }
 
     const items = Array.from(e.clipboardData.items);
-    console.log('剪贴板项目:', items.map(item => ({ type: item.type, kind: item.kind })));
-    
+    console.log(
+      "剪贴板项目:",
+      items.map((item) => ({ type: item.type, kind: item.kind }))
+    );
+
     // 支持所有类型的文件，不仅仅是图片
-    const fileItems = items.filter(item => item.kind === 'file');
-    console.log('找到文件项目:', fileItems.length);
-    
+    const fileItems = items.filter((item) => item.kind === "file");
+    console.log("找到文件项目:", fileItems.length);
+
     if (fileItems.length > 0) {
       e.preventDefault();
       setProcessingFiles(true);
-      
+
       // 处理粘贴的文件
       const files: File[] = [];
       for (const item of fileItems) {
         const file = item.getAsFile();
         if (file) {
-          console.log('获得粘贴文件:', file.name, file.type, file.size);
+          console.log("获得粘贴文件:", file.name, file.type, file.size);
           files.push(file);
         }
       }
-      
+
       if (files.length > 0) {
-        console.log('设置粘贴文件:', files);
+        console.log("设置粘贴文件:", files);
         // 打开文件上传区域
         setFileDrawerOpen(true);
         setShowUploadArea(true);
@@ -509,7 +519,7 @@ const ChatMessages: React.FC = () => {
         setProcessingFiles(false);
       }
     } else {
-      console.log('没有找到文件');
+      console.log("没有找到文件");
     }
   };
 
@@ -518,10 +528,10 @@ const ChatMessages: React.FC = () => {
     console.log("文件上传完成:", files);
 
     // 防止重复处理相同文件
-    const newFiles = files.filter(file => {
+    const newFiles = files.filter((file) => {
       const fileKey = `${file.file_name}-${file.file_size}-${file.created_at}`;
       if (processedFiles.current.has(fileKey)) {
-        console.log('文件已处理，跳过:', file.file_name);
+        console.log("文件已处理，跳过:", file.file_name);
         return false;
       }
       processedFiles.current.add(fileKey);
@@ -529,7 +539,7 @@ const ChatMessages: React.FC = () => {
     });
 
     if (newFiles.length === 0) {
-      console.log('所有文件已处理，跳过发送消息');
+      console.log("所有文件已处理，跳过发送消息");
       setShowUploadArea(false);
       setProcessingFiles(false);
       return;
@@ -541,7 +551,7 @@ const ChatMessages: React.FC = () => {
         file.file_size
       )})`;
       try {
-        await sendMessage(fileMessage);
+        await sendMessage(fileMessage, "file");
       } catch (error) {
         console.error("发送文件消息失败:", error);
       }
@@ -549,23 +559,23 @@ const ChatMessages: React.FC = () => {
 
     setShowUploadArea(false);
     setProcessingFiles(false); // 重置处理状态
-    
+
     // 清理过期的文件记录（保留最近100个）
     if (processedFiles.current.size > 100) {
       const keys = Array.from(processedFiles.current);
       processedFiles.current.clear();
-      keys.slice(-50).forEach(key => processedFiles.current.add(key));
+      keys.slice(-50).forEach((key) => processedFiles.current.add(key));
     }
   };
 
   const handleDraggedFilesProcessed = () => {
-    console.log('清空拖拽文件');
+    console.log("清空拖拽文件");
     setDraggedFiles([]);
     setProcessingFiles(false); // 重置处理状态
   };
 
   const handlePastedFilesProcessed = () => {
-    console.log('清空粘贴文件');
+    console.log("清空粘贴文件");
     setPastedFiles([]);
     setProcessingFiles(false); // 重置处理状态
   };
@@ -667,34 +677,37 @@ const ChatMessages: React.FC = () => {
       onDrop={handleDrop}
       onPaste={handlePaste}
       tabIndex={0} // 使容器可以接收键盘事件
-      onFocus={() => console.log('聊天窗口获得焦点，可以粘贴文件')}
-      style={{ outline: 'none' }} // 移除焦点边框
+      onFocus={() => console.log("聊天窗口获得焦点，可以粘贴文件")}
+      style={{ outline: "none" }} // 移除焦点边框
     >
       {/* 拖拽覆盖层 */}
       {isDragEnter && (
         <Box
           sx={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            bgcolor: 'rgba(7, 193, 96, 0.1)',
-            border: '3px dashed #07C160',
+            bgcolor: "rgba(7, 193, 96, 0.1)",
+            border: "3px dashed #07C160",
             borderRadius: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
             zIndex: 1000,
-            backdropFilter: 'blur(4px)',
+            backdropFilter: "blur(4px)",
           }}
         >
-          <CloudUpload sx={{ fontSize: 64, color: '#07C160', mb: 2 }} />
-          <Typography variant="h5" sx={{ color: '#07C160', fontWeight: 600, mb: 1 }}>
+          <CloudUpload sx={{ fontSize: 64, color: "#07C160", mb: 2 }} />
+          <Typography
+            variant="h5"
+            sx={{ color: "#07C160", fontWeight: 600, mb: 1 }}
+          >
             📁 拖放文件到这里
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body1" sx={{ color: "text.secondary" }}>
             松开鼠标即可上传文件
           </Typography>
         </Box>
@@ -781,8 +794,8 @@ const ChatMessages: React.FC = () => {
 
       {/* 输入区域 */}
       <Box sx={{ borderTop: 1, borderColor: "divider" }}>
-        <MessageInput 
-          onSendMessage={sendMessage} 
+        <MessageInput
+          onSendMessage={sendMessage}
           disabled={!isConnected}
           onOpenFileDrawer={() => setFileDrawerOpen(true)}
         />
@@ -832,17 +845,21 @@ const ChatMessages: React.FC = () => {
                 fontSize: "0.875rem",
                 fontWeight: 600,
                 minWidth: 120,
-                boxShadow: showUploadArea ? '0 2px 8px rgba(7, 193, 96, 0.25)' : 'none',
-                bgcolor: showUploadArea ? '#07C160' : 'transparent',
-                borderColor: showUploadArea ? '#07C160' : '#E0E0E0',
-                color: showUploadArea ? 'white' : 'text.primary',
-                '&:hover': {
-                  bgcolor: showUploadArea ? '#06A050' : 'rgba(7, 193, 96, 0.04)',
-                  borderColor: '#07C160',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(7, 193, 96, 0.2)',
+                boxShadow: showUploadArea
+                  ? "0 2px 8px rgba(7, 193, 96, 0.25)"
+                  : "none",
+                bgcolor: showUploadArea ? "#07C160" : "transparent",
+                borderColor: showUploadArea ? "#07C160" : "#E0E0E0",
+                color: showUploadArea ? "white" : "text.primary",
+                "&:hover": {
+                  bgcolor: showUploadArea
+                    ? "#06A050"
+                    : "rgba(7, 193, 96, 0.04)",
+                  borderColor: "#07C160",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 12px rgba(7, 193, 96, 0.2)",
                 },
-                transition: 'all 0.2s ease',
+                transition: "all 0.2s ease",
               }}
             >
               {showUploadArea ? "隐藏上传" : "📤 上传文件"}
@@ -858,7 +875,13 @@ const ChatMessages: React.FC = () => {
               onUploadComplete={handleFileUploadComplete}
               onUploadError={handleFileUploadError}
               maxFileSize={50}
-              externalFiles={draggedFiles.length > 0 ? draggedFiles : (pastedFiles.length > 0 ? pastedFiles : undefined)}
+              externalFiles={
+                draggedFiles.length > 0
+                  ? draggedFiles
+                  : pastedFiles.length > 0
+                  ? pastedFiles
+                  : undefined
+              }
               onExternalFilesProcessed={() => {
                 if (draggedFiles.length > 0) {
                   handleDraggedFilesProcessed();

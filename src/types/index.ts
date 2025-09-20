@@ -63,7 +63,7 @@ export interface FrontendMessage {
   userId: number;
   user: User;
   timestamp: string;
-  type?: "text" | "system" | "notification";
+  type?: "text" | "file" | "system" | "notification";
   edited?: boolean;
   editedAt?: string;
 }
@@ -78,6 +78,7 @@ export interface SendMessageRequest {
 export interface WebSocketMessage {
   type:
     | "message"
+    | "file"
     | "user_joined"
     | "user_left"
     | "typing"
@@ -85,7 +86,8 @@ export interface WebSocketMessage {
     | "auth"
     | "auth_response";
   content?: string;
-  chatroom_id?: number;
+  chat_room_id?: number;
+  chatroom_id?: number; // Keep for backwards compatibility
   chatroomId?: number; // Keep for backwards compatibility
   user?: User;
   message?: Message;
@@ -178,7 +180,7 @@ export interface ChatContextType {
   isLoading: boolean;
   error: string | null;
   setCurrentRoom: (room: ChatRoom | null) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, messageType?: "text" | "file") => Promise<void>;
   joinRoom: (roomId: number) => void;
   leaveRoom: () => void;
   loadMessages: (roomId: number, params?: PaginationParams) => Promise<void>;
