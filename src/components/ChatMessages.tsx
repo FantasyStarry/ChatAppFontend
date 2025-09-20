@@ -33,7 +33,24 @@ import { apiService } from "../services/api";
 // 日期格式化工具函数
 // 解析文件消息内容，提取文件信息
 const parseFileMessage = (content: string) => {
-  // 匹配格式: [文件:ID] 文件名 (文件大小) 或 [文件] 文件名 (文件大小)
+  try {
+    // 尝试解析JSON格式的文件消息
+    const fileData = JSON.parse(content);
+    if (fileData.id && fileData.fileName) {
+      return {
+        fileId: fileData.id,
+        fileName: fileData.fileName,
+        fileSize: fileData.fileSize,
+        contentType: fileData.contentType || "application/octet-stream",
+      };
+    }
+  } catch (error) {
+    // 如果JSON解析失败，尝试解析旧格式
+    console.log("尝试解析旧格式文件消息:", content);
+    console.log("如果JSON解析失败,尝试解析旧格式:", error);
+  }
+
+  // 兼容旧格式: [文件:ID] 文件名 (文件大小) 或 [文件] 文件名 (文件大小)
   const fileMessageRegex = /^\[文件(?::(\d+))?\]\s*(.+?)\s*\((.+?)\)$/;
   const match = content.match(fileMessageRegex);
 
@@ -552,22 +569,24 @@ const ChatMessages: React.FC = () => {
       setProcessingFiles(true);
       // 直接上传文件，不弹出侧边栏
       console.log("开始直接上传拖拽文件:", files);
-      
+
       // 直接调用上传API
       for (const file of files) {
         try {
           const result = await apiService.uploadFile(file, currentRoom.id);
           console.log("文件上传成功:", result);
-          
+
           // 发送文件消息
-          const fileMessage = `[文件:${result.id}] ${result.file_name} (${formatFileSize(result.file_size)})`;
+          const fileMessage = `[文件:${result.id}] ${
+            result.file_name
+          } (${formatFileSize(result.file_size)})`;
           await sendMessage(fileMessage, "file");
         } catch (error) {
           console.error("文件上传失败:", error);
           alert(`文件上传失败: ${file.name}`);
         }
       }
-      
+
       setProcessingFiles(false);
     }
   };
@@ -614,22 +633,28 @@ const ChatMessages: React.FC = () => {
         console.log("设置粘贴文件:", files);
         // 直接上传文件，不弹出侧边栏
         console.log("开始直接上传粘贴文件:", files);
-        
+
         // 直接调用上传API
         for (const file of files) {
           try {
             const result = await apiService.uploadFile(file, currentRoom.id);
             console.log("文件上传成功:", result);
-            
-            // 发送文件消息
-            const fileMessage = `[文件:${result.id}] ${result.file_name} (${formatFileSize(result.file_size)})`;
+
+            // 发送文件消息，使用JSON格式确保与parseFileMessage函数期望的格式匹配
+            const fileMessage = JSON.stringify({
+              id: result.id,
+              fileName: result.file_name,
+              fileSize: result.file_size,
+              contentType: result.content_type || "application/octet-stream",
+              uploadedAt: result.created_at,
+            });
             await sendMessage(fileMessage, "file");
           } catch (error) {
             console.error("文件上传失败:", error);
             alert(`文件上传失败: ${file.name}`);
           }
         }
-        
+
         setProcessingFiles(false);
       } else {
         setProcessingFiles(false);
@@ -663,9 +688,14 @@ const ChatMessages: React.FC = () => {
 
     // 在聊天记录中显示文件上传消息
     for (const file of newFiles) {
-      const fileMessage = `[文件:${file.id}] ${file.file_name} (${formatFileSize(
-        file.file_size
-      )})`;
+      // 修复文件消息格式，确保与parseFileMessage函数期望的格式匹配
+      const fileMessage = JSON.stringify({
+        id: file.id,
+        fileName: file.file_name,
+        fileSize: file.file_size,
+        contentType: file.content_type || "application/octet-stream",
+        uploadedAt: file.created_at,
+      });
       try {
         await sendMessage(fileMessage, "file");
       } catch (error) {
