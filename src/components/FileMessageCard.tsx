@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import {
-  Card,
-  CardContent,
   Box,
   Typography,
   IconButton,
@@ -18,6 +16,7 @@ import {
   VideoFile as VideoIcon,
   AudioFile as AudioIcon,
   Download as DownloadIcon,
+  Schedule,
 } from "@mui/icons-material";
 import { apiService } from "../services/api";
 
@@ -140,129 +139,190 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
   contentType,
   fileId,
   uploadedAt,
-  onClick,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // 防止触发父组件的点击事件
-
-    if (!fileId) {
-      console.error("文件ID不存在，无法下载");
-      return;
+  const handleCardClick = () => {
+    if (fileId && !isDownloading) {
+      handleDownload();
     }
+  };
+
+  const handleDownload = async () => {
+    if (!fileId || isDownloading) return;
 
     setIsDownloading(true);
     try {
+      // apiService.downloadFile 已经处理了文件下载逻辑
       await apiService.downloadFile(fileId);
     } catch (error) {
-      console.error("文件下载失败:", error);
+      console.error('下载文件失败:', error);
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const handleCardClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (fileId) {
-      // 如果没有自定义点击处理，默认下载文件
-      handleDownload({} as React.MouseEvent);
-    }
-  };
-
   return (
-    <Card
+    <Box
       sx={{
-        maxWidth: 320,
-        cursor: "pointer",
-        transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          boxShadow: 3,
-          transform: "translateY(-1px)",
-        },
-        border: "1px solid",
-        borderColor: "divider",
-      }}
+          maxWidth: 280,
+          minWidth: 240,
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          border: "1px solid #E5E5E5",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+          transition: "all 0.2s ease-in-out",
+          cursor: fileId ? "pointer" : "default",
+          overflow: "hidden",
+          position: "relative",
+          "&:hover": fileId ? {
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+            transform: "translateY(-1px)",
+            "& .download-button": {
+              backgroundColor: "#06AD56",
+              transform: "scale(1.1)",
+            },
+          } : {},
+          "&:active": fileId ? {
+            transform: "translateY(0px)",
+            boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
+          } : {},
+        }}
       onClick={handleCardClick}
     >
-      <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-        <Box display="flex" alignItems="flex-start" gap={1.5}>
-          {/* 文件图标 */}
-          <Box sx={{ flexShrink: 0, mt: 0.5 }}>
-            {getFileIcon(contentType, fileName)}
-          </Box>
-
-          {/* 文件信息 */}
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              {getFileTypeChip(contentType, fileName)}
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: "0.75rem" }}
-              >
-                {formatFileSize(fileSize)}
-              </Typography>
-            </Box>
-
-            <Tooltip title={fileName} placement="top">
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 500,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  mb: 0.5,
-                }}
-              >
-                {fileName}
-              </Typography>
-            </Tooltip>
-
-            {uploadedAt && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.7rem" }}
-              >
-                {new Date(uploadedAt).toLocaleString("zh-CN", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </Typography>
-            )}
-          </Box>
-
-          {/* 下载按钮 */}
-          {fileId && (
-            <Box sx={{ flexShrink: 0 }}>
-              <IconButton
-                size="small"
-                onClick={handleDownload}
-                disabled={isDownloading}
-                sx={{
-                  color: "primary.main",
-                  "&:hover": {
-                    backgroundColor: "primary.main",
-                    color: "white",
-                  },
-                }}
-              >
-                {isDownloading ? (
-                  <CircularProgress size={16} />
-                ) : (
-                  <DownloadIcon fontSize="small" />
-                )}
-              </IconButton>
-            </Box>
-          )}
+      {/* 文件头部区域 */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          padding: "12px 16px",
+          borderBottom: "1px solid #F0F0F0",
+          backgroundColor: "#FAFAFA",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 40,
+            height: 40,
+            borderRadius: "8px",
+            backgroundColor: "#F7F7F7",
+            marginRight: "12px",
+            flexShrink: 0,
+          }}
+        >
+          {React.cloneElement(getFileIcon(contentType, fileName), {
+            sx: { fontSize: 24 },
+          })}
         </Box>
-      </CardContent>
-    </Card>
+        
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Tooltip title={fileName} placement="top">
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: "#333333",
+                fontSize: "14px",
+                lineHeight: "20px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                marginBottom: "2px",
+              }}
+            >
+              {fileName}
+            </Typography>
+          </Tooltip>
+          
+          <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#999999",
+                fontSize: "12px",
+                lineHeight: "16px",
+              }}
+            >
+              {formatFileSize(fileSize)}
+            </Typography>
+            
+            {getFileTypeChip(contentType, fileName)}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* 文件操作区域 */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 16px",
+        }}
+      >
+        {uploadedAt && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Schedule sx={{ fontSize: "14px", color: "#999999" }} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#999999",
+                fontSize: "12px",
+                lineHeight: "16px",
+              }}
+            >
+              {new Date(uploadedAt).toLocaleString("zh-CN", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Typography>
+          </Box>
+        )}
+
+        {fileId && (
+           <Tooltip title="下载文件" placement="top">
+             <IconButton
+               className="download-button"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleDownload();
+               }}
+               disabled={isDownloading}
+               sx={{
+                 width: 32,
+                 height: 32,
+                 backgroundColor: "#07C160",
+                 color: "white",
+                 transition: "all 0.2s ease-in-out",
+                 "&:hover": {
+                   backgroundColor: "#06AD56",
+                   transform: "scale(1.05)",
+                 },
+                 "&:disabled": {
+                   backgroundColor: "#CCCCCC",
+                   color: "white",
+                   cursor: "not-allowed",
+                 },
+                 "&:active": {
+                   transform: "scale(0.95)",
+                 },
+               }}
+             >
+               {isDownloading ? (
+                 <CircularProgress size={16} sx={{ color: "white" }} />
+               ) : (
+                 <DownloadIcon sx={{ fontSize: "16px" }} />
+               )}
+             </IconButton>
+           </Tooltip>
+         )}
+      </Box>
+    </Box>
   );
 };
 
