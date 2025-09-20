@@ -293,10 +293,10 @@ class ApiService {
       ...uploadResult,
       uploader_id: uploadResult.uploader_id,
       // Ensure we have both field names for compatibility
-      chatroom_id: (uploadResult as any).chatroom_id || (uploadResult as any).chat_room_id,
-      chat_room_id: (uploadResult as any).chat_room_id || (uploadResult as any).chatroom_id,
+      chatroom_id: uploadResult.chatroom_id || uploadResult.chat_room_id,
+      chat_room_id: uploadResult.chat_room_id || uploadResult.chatroom_id,
     };
-    
+
     return fileInfo;
   }
 
@@ -309,13 +309,38 @@ class ApiService {
   async downloadFile(fileId: number): Promise<void> {
     const downloadResponse = await this.getFileDownloadUrl(fileId);
 
-    // 创建下载链接
-    const link = document.createElement("a");
-    link.href = downloadResponse.download_url;
-    link.download = downloadResponse.file_info.file_name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // 使用fetch获取文件内容
+      const response = await fetch(downloadResponse.download_url);
+      if (!response.ok) {
+        throw new Error(`下载失败: ${response.statusText}`);
+      }
+
+      // 获取文件内容作为blob
+      const blob = await response.blob();
+
+      // 创建blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // 创建下载链接
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = downloadResponse.file_info.file_name;
+
+      // 设置样式使链接不可见
+      link.style.display = "none";
+
+      // 添加到DOM，点击，然后移除
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 清理blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("文件下载失败:", error);
+      throw new Error("文件下载失败，请稍后重试");
+    }
   }
 
   async deleteFile(fileId: number): Promise<void> {

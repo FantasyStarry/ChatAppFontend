@@ -26,10 +26,83 @@ import { useAuth } from "../hooks/useAuth";
 import FileUpload from "./FileUpload";
 import FileList from "./FileList";
 import FilePreview from "./FilePreview";
+import FileMessageCard from "./FileMessageCard";
 import type { FrontendMessage, FileInfo } from "../types";
 import { apiService } from "../services/api";
 
 // 日期格式化工具函数
+// 解析文件消息内容，提取文件信息
+const parseFileMessage = (content: string) => {
+  // 匹配格式: [文件:ID] 文件名 (文件大小) 或 [文件] 文件名 (文件大小)
+  const fileMessageRegex = /^\[文件(?::(\d+))?\]\s*(.+?)\s*\((.+?)\)$/;
+  const match = content.match(fileMessageRegex);
+
+  if (match) {
+    const fileId = match[1] ? parseInt(match[1], 10) : undefined;
+    const fileName = match[2].trim();
+    const fileSizeStr = match[3].trim();
+
+    // 解析文件大小
+    const sizeMatch = fileSizeStr.match(/^([\d.]+)\s*(B|KB|MB|GB)$/i);
+    let fileSize = 0;
+
+    if (sizeMatch) {
+      const size = parseFloat(sizeMatch[1]);
+      const unit = sizeMatch[2].toUpperCase();
+
+      switch (unit) {
+        case "B":
+          fileSize = size;
+          break;
+        case "KB":
+          fileSize = size * 1024;
+          break;
+        case "MB":
+          fileSize = size * 1024 * 1024;
+          break;
+        case "GB":
+          fileSize = size * 1024 * 1024 * 1024;
+          break;
+      }
+    }
+
+    // 根据文件扩展名推断内容类型
+    const extension = fileName.split(".").pop()?.toLowerCase() || "";
+    let contentType = "application/octet-stream";
+
+    const typeMap: Record<string, string> = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      pdf: "application/pdf",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      csv: "text/csv",
+      txt: "text/plain",
+      zip: "application/zip",
+      rar: "application/x-rar-compressed",
+      mp4: "video/mp4",
+      mp3: "audio/mpeg",
+    };
+
+    if (typeMap[extension]) {
+      contentType = typeMap[extension];
+    }
+
+    return {
+      fileId,
+      fileName,
+      fileSize,
+      contentType,
+    };
+  }
+
+  return null;
+};
+
 const formatMessageDate = (timestamp: string): string => {
   const date = new Date(timestamp);
   const today = new Date();
@@ -109,6 +182,10 @@ interface MessageItemProps {
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
+  // 检查是否为文件消息
+  const fileInfo =
+    message.type === "file" ? parseFileMessage(message.content) : null;
+
   return (
     <Box
       sx={{
@@ -164,35 +241,49 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isOwn }) => {
             flexDirection: isOwn ? "row-reverse" : "row",
           }}
         >
-          {/* 消息气泡 */}
-          <Paper
-            elevation={1}
-            sx={{
-              p: 1.5,
-              borderRadius: 1.5,
-              background: isOwn
-                ? "#07C160" // WeChat green
-                : "#FFFFFF",
-              color: isOwn ? "white" : "text.primary",
-              position: "relative",
-              border: isOwn ? "none" : "1px solid #E5E5E5",
-              maxWidth: "100%",
-              wordBreak: "break-word",
-              boxShadow: isOwn
-                ? "0 2px 8px rgba(7, 193, 96, 0.15)"
-                : "0 2px 4px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <Typography
-              variant="body2"
+          {/* 消息内容 - 根据类型渲染 */}
+          {fileInfo ? (
+            // 文件消息 - 使用文件卡片组件
+            <Box sx={{ mb: 0.5 }}>
+              <FileMessageCard
+                fileName={fileInfo.fileName}
+                fileSize={fileInfo.fileSize}
+                contentType={fileInfo.contentType}
+                fileId={fileInfo.fileId}
+                uploadedAt={message.timestamp}
+              />
+            </Box>
+          ) : (
+            // 普通文本消息 - 使用消息气泡
+            <Paper
+              elevation={1}
               sx={{
-                lineHeight: 1.4,
-                fontSize: "0.9rem",
+                p: 1.5,
+                borderRadius: 1.5,
+                background: isOwn
+                  ? "#07C160" // WeChat green
+                  : "#FFFFFF",
+                color: isOwn ? "white" : "text.primary",
+                position: "relative",
+                border: isOwn ? "none" : "1px solid #E5E5E5",
+                maxWidth: "100%",
+                wordBreak: "break-word",
+                boxShadow: isOwn
+                  ? "0 2px 8px rgba(7, 193, 96, 0.15)"
+                  : "0 2px 4px rgba(0, 0, 0, 0.1)",
               }}
             >
-              {message.content}
-            </Typography>
-          </Paper>
+              <Typography
+                variant="body2"
+                sx={{
+                  lineHeight: 1.4,
+                  fontSize: "0.9rem",
+                }}
+              >
+                {message.content}
+              </Typography>
+            </Paper>
+          )}
 
           {/* 时间显示 */}
           <Typography
@@ -459,14 +550,25 @@ const ChatMessages: React.FC = () => {
 
     if (files.length > 0) {
       setProcessingFiles(true);
-      // 打开文件上传区域并传递文件
-      setFileDrawerOpen(true);
-      setShowUploadArea(true);
-
-      // 清空之前的文件再设置新文件
-      setPastedFiles([]); // 清空粘贴文件
-      setDraggedFiles(files);
-      console.log("设置拖拽文件:", files);
+      // 直接上传文件，不弹出侧边栏
+      console.log("开始直接上传拖拽文件:", files);
+      
+      // 直接调用上传API
+      for (const file of files) {
+        try {
+          const result = await apiService.uploadFile(file, currentRoom.id);
+          console.log("文件上传成功:", result);
+          
+          // 发送文件消息
+          const fileMessage = `[文件:${result.id}] ${result.file_name} (${formatFileSize(result.file_size)})`;
+          await sendMessage(fileMessage, "file");
+        } catch (error) {
+          console.error("文件上传失败:", error);
+          alert(`文件上传失败: ${file.name}`);
+        }
+      }
+      
+      setProcessingFiles(false);
     }
   };
 
@@ -510,11 +612,25 @@ const ChatMessages: React.FC = () => {
 
       if (files.length > 0) {
         console.log("设置粘贴文件:", files);
-        // 打开文件上传区域
-        setFileDrawerOpen(true);
-        setShowUploadArea(true);
-        setDraggedFiles([]); // 清空拖拽文件
-        setPastedFiles(files);
+        // 直接上传文件，不弹出侧边栏
+        console.log("开始直接上传粘贴文件:", files);
+        
+        // 直接调用上传API
+        for (const file of files) {
+          try {
+            const result = await apiService.uploadFile(file, currentRoom.id);
+            console.log("文件上传成功:", result);
+            
+            // 发送文件消息
+            const fileMessage = `[文件:${result.id}] ${result.file_name} (${formatFileSize(result.file_size)})`;
+            await sendMessage(fileMessage, "file");
+          } catch (error) {
+            console.error("文件上传失败:", error);
+            alert(`文件上传失败: ${file.name}`);
+          }
+        }
+        
+        setProcessingFiles(false);
       } else {
         setProcessingFiles(false);
       }
@@ -547,7 +663,7 @@ const ChatMessages: React.FC = () => {
 
     // 在聊天记录中显示文件上传消息
     for (const file of newFiles) {
-      const fileMessage = `[文件] ${file.file_name} (${formatFileSize(
+      const fileMessage = `[文件:${file.id}] ${file.file_name} (${formatFileSize(
         file.file_size
       )})`;
       try {

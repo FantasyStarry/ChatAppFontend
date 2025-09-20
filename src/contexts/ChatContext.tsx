@@ -504,7 +504,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
         console.log("通过WebSocket发送消息:", message);
         console.log("messageType参数:", messageType);
-        console.log("计算出的type字段:", messageType === "file" ? "file" : "message");
+        console.log(
+          "计算出的type字段:",
+          messageType === "file" ? "file" : "message"
+        );
         console.log("当前房间ID:", state.currentRoom.id);
         console.log("当前房间信息:", state.currentRoom);
         console.log("最终发送的JSON:", JSON.stringify(message));

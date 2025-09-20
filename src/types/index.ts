@@ -180,7 +180,10 @@ export interface ChatContextType {
   isLoading: boolean;
   error: string | null;
   setCurrentRoom: (room: ChatRoom | null) => void;
-  sendMessage: (content: string, messageType?: "text" | "file") => Promise<void>;
+  sendMessage: (
+    content: string,
+    messageType?: "text" | "file"
+  ) => Promise<void>;
   joinRoom: (roomId: number) => void;
   leaveRoom: () => void;
   loadMessages: (roomId: number, params?: PaginationParams) => Promise<void>;
