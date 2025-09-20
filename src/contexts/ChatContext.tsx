@@ -74,6 +74,19 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       };
     }
     case "ADD_MESSAGE": {
+      // 检查是否已存在相同的消息（防止重复添加）
+      const messageExists = state.messages.some(msg => 
+        msg.id === action.payload.id || 
+        (msg.content === action.payload.content && 
+         msg.userId === action.payload.userId && 
+         Math.abs(new Date(msg.timestamp).getTime() - new Date(action.payload.timestamp).getTime()) < 1000)
+      );
+      
+      if (messageExists) {
+        console.log("消息已存在，跳过添加:", action.payload);
+        return state;
+      }
+
       // Add new message and maintain chronological order
       const newMessages = [...state.messages, action.payload];
       const sortedNewMessages = newMessages.sort(
@@ -86,13 +99,29 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         messages: sortedNewMessages,
       };
     }
-    case "UPDATE_MESSAGE":
+    case "UPDATE_MESSAGE": {
+      // 替换临时消息为服务器返回的真实消息
+      const updatedMessages = state.messages.map((msg) =>
+        msg.id === action.payload.tempId ? action.payload.newMessage : msg
+      );
+      
+      // 如果没有找到要替换的消息，直接添加新消息
+      const messageFound = state.messages.some(msg => msg.id === action.payload.tempId);
+      if (!messageFound) {
+        updatedMessages.push(action.payload.newMessage);
+      }
+      
+      // 按时间戳排序
+      const sortedMessages = updatedMessages.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
       return {
         ...state,
-        messages: state.messages.map((msg) =>
-          msg.id === action.payload.tempId ? action.payload.newMessage : msg
-        ),
+        messages: sortedMessages,
       };
+    }
     case "PREPEND_MESSAGES":
       return {
         ...state,
@@ -367,12 +396,42 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               const frontendMessage = convertMessageToFrontend(data.message);
               console.log("转换后的消息:", frontendMessage); // 添加调试日志
 
-              // 检查是否是自己发送的消息（通过用户ID和内容对比）
+              // 检查是否是自己发送的消息（通过用户ID对比）
               const isOwnMessage = frontendMessage.userId === user?.id;
               console.log("是否为自己的消息:", isOwnMessage);
 
-              // 如果不是自己的消息，或者是服务器确认的消息，就添加到列表
-              dispatch({ type: "ADD_MESSAGE", payload: frontendMessage });
+              if (isOwnMessage) {
+                // 如果是自己的消息，查找并替换临时消息
+                const tempMessageExists = state.messages.some(msg => 
+                  msg.userId === frontendMessage.userId && 
+                  msg.content === frontendMessage.content &&
+                  msg.id > 1000000000000 // 临时ID通常是时间戳，比较大
+                );
+                
+                if (tempMessageExists) {
+                  // 找到临时消息，用服务器返回的消息替换它
+                  console.log("替换临时消息为服务器消息");
+                  dispatch({ 
+                    type: "UPDATE_MESSAGE", 
+                    payload: { 
+                      tempId: state.messages.find(msg => 
+                        msg.userId === frontendMessage.userId && 
+                        msg.content === frontendMessage.content &&
+                        msg.id > 1000000000000
+                      )?.id || 0, 
+                      newMessage: frontendMessage 
+                    } 
+                  });
+                } else {
+                  // 没有找到临时消息，可能是页面刷新后收到的消息，直接添加
+                  console.log("添加自己的消息（无临时消息）");
+                  dispatch({ type: "ADD_MESSAGE", payload: frontendMessage });
+                }
+              } else {
+                // 其他用户的消息，直接添加
+                console.log("添加其他用户的消息");
+                dispatch({ type: "ADD_MESSAGE", payload: frontendMessage });
+              }
             }
           } catch (error) {
             console.error("Failed to parse WebSocket message:", error);
