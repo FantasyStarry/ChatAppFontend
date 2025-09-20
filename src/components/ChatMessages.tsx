@@ -822,9 +822,9 @@ const ChatMessages: React.FC = () => {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onPaste={handlePaste}
-      tabIndex={0} // 使容器可以接收键盘事件
+      tabIndex={0}
       onFocus={() => console.log("聊天窗口获得焦点，可以粘贴文件")}
-      style={{ outline: "none" }} // 移除焦点边框
+      style={{ outline: "none" }}
     >
       {/* 拖拽覆盖层 */}
       {isDragEnter && (
@@ -858,6 +858,7 @@ const ChatMessages: React.FC = () => {
           </Typography>
         </Box>
       )}
+
       {/* 连接状态提示 */}
       {!isConnected && (
         <Alert
@@ -876,20 +877,21 @@ const ChatMessages: React.FC = () => {
         </Alert>
       )}
 
-      {/* 消息列表 */}
+      {/* 消息列表区域 */}
       <Box
         ref={messagesContainerRef}
         sx={{
           flex: 1,
           overflow: "auto",
-          p: 2,
+          p: { xs: 1.5, sm: 2 },
           display: "flex",
           flexDirection: "column",
+          bgcolor: "background.default",
         }}
       >
         {isLoading && messages.length === 0 ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-            <CircularProgress />
+            <CircularProgress size={32} />
           </Box>
         ) : messages.length === 0 ? (
           <Box
@@ -900,16 +902,19 @@ const ChatMessages: React.FC = () => {
               justifyContent: "center",
               flexDirection: "column",
               color: "text.secondary",
+              py: 6,
             }}
           >
             <EmojiEmotions sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
-            <Typography variant="body1" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
               开始对话吧！
             </Typography>
-            <Typography variant="body2">发送第一条消息来开始聊天</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+              发送第一条消息来开始聊天
+            </Typography>
           </Box>
         ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {messages.map((message, index) => {
               const previousMessage =
                 index > 0 ? messages[index - 1] : undefined;
@@ -920,12 +925,9 @@ const ChatMessages: React.FC = () => {
 
               return (
                 <React.Fragment key={message.id}>
-                  {/* Date separator - only show if messages are from different days */}
                   {showDateSeparator && (
                     <DateSeparator timestamp={message.timestamp} />
                   )}
-
-                  {/* Message item */}
                   <MessageItem
                     message={message}
                     isOwn={message.user.id === user?.id}
@@ -938,8 +940,14 @@ const ChatMessages: React.FC = () => {
         )}
       </Box>
 
-      {/* 输入区域 */}
-      <Box sx={{ borderTop: 1, borderColor: "divider" }}>
+      {/* 输入区域和文件管理整合 */}
+      <Box 
+        sx={{ 
+          borderTop: 1, 
+          borderColor: "divider",
+          bgcolor: "background.paper",
+        }}
+      >
         <MessageInput
           onSendMessage={sendMessage}
           disabled={!isConnected}
@@ -947,7 +955,7 @@ const ChatMessages: React.FC = () => {
         />
       </Box>
 
-      {/* 文件面板 */}
+      {/* 文件管理面板 */}
       <Drawer
         anchor="right"
         open={fileDrawerOpen}
@@ -959,6 +967,7 @@ const ChatMessages: React.FC = () => {
           },
         }}
       >
+        {/* 文件面板头部 */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
           <Box
             sx={{
@@ -977,40 +986,39 @@ const ChatMessages: React.FC = () => {
           </Typography>
         </Box>
 
+        {/* 文件上传控制 */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <Button
-              variant={showUploadArea ? "contained" : "outlined"}
-              onClick={() => setShowUploadArea(!showUploadArea)}
-              size="small"
-              startIcon={showUploadArea ? <Close /> : <CloudUpload />}
-              sx={{
-                borderRadius: 2,
-                px: 2.5,
-                py: 1,
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                minWidth: 120,
-                boxShadow: showUploadArea
-                  ? "0 2px 8px rgba(7, 193, 96, 0.25)"
-                  : "none",
-                bgcolor: showUploadArea ? "#07C160" : "transparent",
-                borderColor: showUploadArea ? "#07C160" : "#E0E0E0",
-                color: showUploadArea ? "white" : "text.primary",
-                "&:hover": {
-                  bgcolor: showUploadArea
-                    ? "#06A050"
-                    : "rgba(7, 193, 96, 0.04)",
-                  borderColor: "#07C160",
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 4px 12px rgba(7, 193, 96, 0.2)",
-                },
-                transition: "all 0.2s ease",
-              }}
-            >
-              {showUploadArea ? "隐藏上传" : "📤 上传文件"}
-            </Button>
-          </Box>
+          <Button
+            variant={showUploadArea ? "contained" : "outlined"}
+            onClick={() => setShowUploadArea(!showUploadArea)}
+            size="small"
+            startIcon={showUploadArea ? <Close /> : <CloudUpload />}
+            sx={{
+              borderRadius: 2,
+              px: 2.5,
+              py: 1,
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              minWidth: 120,
+              boxShadow: showUploadArea
+                ? "0 2px 8px rgba(7, 193, 96, 0.25)"
+                : "none",
+              bgcolor: showUploadArea ? "#07C160" : "transparent",
+              borderColor: showUploadArea ? "#07C160" : "#E0E0E0",
+              color: showUploadArea ? "white" : "text.primary",
+              "&:hover": {
+                bgcolor: showUploadArea
+                  ? "#06A050"
+                  : "rgba(7, 193, 96, 0.04)",
+                borderColor: "#07C160",
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(7, 193, 96, 0.2)",
+              },
+              transition: "all 0.2s ease",
+            }}
+          >
+            {showUploadArea ? "隐藏上传" : "📤 上传文件"}
+          </Button>
         </Box>
 
         {/* 文件上传区域 */}

@@ -8,7 +8,6 @@ import {
   ListItemText,
   Avatar,
   Typography,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -16,11 +15,11 @@ import {
   TextField,
   Button,
   Fab,
-  Chip,
   Skeleton,
   Alert,
+  Badge,
 } from "@mui/material";
-import { Chat, Add, Group, Refresh } from "@mui/icons-material";
+import { Chat, Add, AccessTime } from "@mui/icons-material";
 import { useChat } from "../hooks/useChat";
 import type { ChatRoom, CreateChatRoomRequest } from "../types";
 
@@ -30,7 +29,6 @@ const ChatRoomList: React.FC = () => {
     currentRoom,
     setCurrentRoom,
     isLoading,
-    loadRooms,
     createRoom,
   } = useChat();
 
@@ -80,9 +78,6 @@ const ChatRoomList: React.FC = () => {
     }
   };
 
-  const handleRefresh = () => {
-    loadRooms();
-  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -113,42 +108,16 @@ const ChatRoomList: React.FC = () => {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* 头部操作栏 */}
-      <Box
-        sx={{
-          p: 2,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Typography variant="h6" fontWeight="bold">
-          聊天室
-        </Typography>
-        <Box>
-          <IconButton
-            size="small"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            title="刷新"
-          >
-            <Refresh />
-          </IconButton>
-        </Box>
-      </Box>
-
       {/* 房间列表 */}
-      <Box sx={{ flex: 1, overflow: "auto" }}>
+      <Box sx={{ flex: 1, overflow: "auto", px: 1 }}>
         {isLoading && rooms.length === 0 ? (
           // 加载骨架
-          <Box sx={{ p: 1 }}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Box key={index} sx={{ p: 1 }}>
+          <Box>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Box key={index} sx={{ mb: 1 }}>
                 <Skeleton
                   variant="rectangular"
-                  height={72}
+                  height={68}
                   sx={{ borderRadius: 2 }}
                 />
               </Box>
@@ -161,42 +130,89 @@ const ChatRoomList: React.FC = () => {
               p: 4,
               textAlign: "center",
               color: "text.secondary",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "200px",
             }}
           >
-            <Chat sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
-            <Typography variant="body2">暂无聊天室</Typography>
-            <Typography variant="caption">点击 + 创建第一个聊天室</Typography>
+            <Chat sx={{ fontSize: 48, opacity: 0.3, mb: 2, color: "#CCCCCC" }} />
+            <Typography variant="body2" sx={{ mb: 1, color: "#888888" }}>
+              暂无聊天室
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#AAAAAA" }}>
+              点击下方 + 按钮创建第一个聊天室
+            </Typography>
           </Box>
         ) : (
-          <List sx={{ p: 1 }}>
+          <List sx={{ p: 0 }}>
             {rooms.map((room) => (
-              <ListItem key={room.id} disablePadding sx={{ mb: 0.5 }}>
+              <ListItem key={room.id} disablePadding sx={{ mb: 1 }}>
                 <ListItemButton
                   selected={currentRoom?.id === room.id}
                   onClick={() => handleRoomSelect(room)}
                   sx={{
                     borderRadius: 2,
+                    p: 2,
+                    transition: "all 0.2s ease",
+                    border: "1px solid transparent",
+                    "&:hover": {
+                      bgcolor: "#F8F9FA",
+                      border: "1px solid #E5E5E5",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    },
                     "&.Mui-selected": {
-                      background:
-                        "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)",
+                      bgcolor: "rgba(7, 193, 96, 0.08)",
+                      border: "1px solid rgba(7, 193, 96, 0.2)",
                       "&:hover": {
-                        background:
-                          "linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)",
+                        bgcolor: "rgba(7, 193, 96, 0.12)",
+                        border: "1px solid rgba(7, 193, 96, 0.3)",
                       },
                     },
                   }}
                 >
                   <ListItemAvatar>
-                    <Avatar
-                      sx={{
-                        bgcolor: "primary.main",
-                        width: 48,
-                        height: 48,
-                        fontWeight: "bold",
-                      }}
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                      badgeContent={
+                        room.memberCount && room.memberCount > 1 ? (
+                          <Box
+                            sx={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: "50%",
+                              bgcolor: "#07C160",
+                              color: "white",
+                              fontSize: "0.6rem",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              border: "2px solid white",
+                            }}
+                          >
+                            {room.memberCount}
+                          </Box>
+                        ) : null
+                      }
                     >
-                      {getRoomAvatar(room)}
-                    </Avatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: currentRoom?.id === room.id ? "#07C160" : "#F0F0F0",
+                          color: currentRoom?.id === room.id ? "white" : "#666666",
+                          width: 44,
+                          height: 44,
+                          fontWeight: 700,
+                          fontSize: "1.1rem",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {getRoomAvatar(room)}
+                      </Avatar>
+                    </Badge>
                   </ListItemAvatar>
                   <ListItemText
                     primary={
@@ -204,70 +220,90 @@ const ChatRoomList: React.FC = () => {
                         sx={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 1,
+                          justifyContent: "space-between",
                           mb: 0.5,
                         }}
                       >
                         <Typography
                           variant="subtitle2"
-                          fontWeight="bold"
                           sx={{
+                            fontWeight: 600,
+                            color: "#191919",
+                            fontSize: "0.95rem",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
                             flex: 1,
+                            mr: 1,
                           }}
                         >
                           {room.name}
                         </Typography>
-                        {room.memberCount && (
-                          <Chip
-                            size="small"
-                            label={room.memberCount}
-                            icon={<Group />}
-                            variant="outlined"
-                            sx={{ height: 20, fontSize: "0.7rem" }}
-                          />
+                        {room.lastMessage && (
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <AccessTime sx={{ fontSize: 12, color: "#AAAAAA" }} />
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "#AAAAAA",
+                                fontSize: "0.7rem",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {formatTime(room.lastMessage.created_at)}
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
                     }
                     secondary={
                       <Box>
                         {room.lastMessage ? (
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {room.lastMessage.user.username}:{" "}
-                              {room.lastMessage.content}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {formatTime(room.lastMessage.created_at)}
-                            </Typography>
-                          </Box>
-                        ) : room.description ? (
                           <Typography
                             variant="body2"
-                            color="text.secondary"
                             sx={{
+                              color: "#666666",
+                              fontSize: "0.8rem",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            <Box
+                              component="span"
+                              sx={{
+                                fontWeight: 500,
+                                color: "#07C160",
+                              }}
+                            >
+                              {room.lastMessage.user.username}
+                            </Box>
+                            : {room.lastMessage.content}
+                          </Typography>
+                        ) : room.description ? (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "#888888",
+                              fontSize: "0.8rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontStyle: "italic",
                             }}
                           >
                             {room.description}
                           </Typography>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "#AAAAAA",
+                              fontSize: "0.8rem",
+                              fontStyle: "italic",
+                            }}
+                          >
                             暂无消息
                           </Typography>
                         )}
@@ -282,16 +318,24 @@ const ChatRoomList: React.FC = () => {
       </Box>
 
       {/* 创建房间浮动按钮 */}
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
         <Fab
           color="primary"
           aria-label="创建聊天室"
           onClick={() => setCreateDialogOpen(true)}
           size="medium"
           sx={{
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background: "linear-gradient(135deg, #07C160 0%, #06AD56 100%)",
+            color: "white",
+            boxShadow: "0 4px 12px rgba(7, 193, 96, 0.3)",
+            transition: "all 0.3s ease",
             "&:hover": {
-              background: "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
+              background: "linear-gradient(135deg, #06AD56 0%, #05A04E 100%)",
+              transform: "scale(1.05)",
+              boxShadow: "0 6px 16px rgba(7, 193, 96, 0.4)",
+            },
+            "&:active": {
+              transform: "scale(0.95)",
             },
           }}
         >
@@ -306,17 +350,28 @@ const ChatRoomList: React.FC = () => {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 },
+          sx: { 
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+          },
         }}
       >
         <DialogTitle>
-          <Typography variant="h6" fontWeight="bold">
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#191919" }}>
             创建新聊天室
           </Typography>
         </DialogTitle>
         <DialogContent>
           {error && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 2, 
+                borderRadius: 2,
+                bgcolor: "rgba(244, 67, 54, 0.08)",
+                border: "1px solid rgba(244, 67, 54, 0.2)",
+              }}
+            >
               {error}
             </Alert>
           )}
@@ -331,7 +386,18 @@ const ChatRoomList: React.FC = () => {
               setNewRoomData((prev) => ({ ...prev, name: e.target.value }))
             }
             disabled={creating}
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#07C160",
+                },
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#07C160",
+              },
+            }}
           />
           <TextField
             margin="dense"
@@ -348,12 +414,29 @@ const ChatRoomList: React.FC = () => {
               }))
             }
             disabled={creating}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#07C160",
+                },
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#07C160",
+              },
+            }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button
             onClick={() => setCreateDialogOpen(false)}
             disabled={creating}
+            sx={{
+              color: "#666666",
+              "&:hover": {
+                bgcolor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
           >
             取消
           </Button>
@@ -362,9 +445,18 @@ const ChatRoomList: React.FC = () => {
             variant="contained"
             disabled={creating || !newRoomData.name.trim()}
             sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #07C160 0%, #06AD56 100%)",
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 600,
+              boxShadow: "0 2px 8px rgba(7, 193, 96, 0.3)",
               "&:hover": {
-                background: "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
+                background: "linear-gradient(135deg, #06AD56 0%, #05A04E 100%)",
+                boxShadow: "0 4px 12px rgba(7, 193, 96, 0.4)",
+              },
+              "&:disabled": {
+                background: "#CCCCCC",
+                color: "#888888",
               },
             }}
           >

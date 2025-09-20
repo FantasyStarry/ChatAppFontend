@@ -11,15 +11,11 @@ import {
   MenuItem,
   Divider,
   Chip,
-  useTheme,
   Tooltip,
-  CircularProgress,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
-  AccountCircle,
   Logout,
-  Settings,
   People,
   ChatBubble,
   Folder,
@@ -27,7 +23,6 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import ChatRoomList from "../components/ChatRoomList";
-import ConnectionStatus from "../components/ConnectionStatus";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const DRAWER_WIDTH = 320;
@@ -37,10 +32,9 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const theme = useTheme();
   const navigate = useNavigate();
 
-  const { user, logout, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { isConnected, currentRoom } = useChat();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -89,102 +83,156 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        bgcolor: "background.paper",
+        bgcolor: "#FAFAFA",
+        borderRight: "1px solid #E8E8E8",
       }}
     >
-      {/* 侧边栏头部 */}
+      {/* 简洁的侧边栏头部 */}
       <Box
         sx={{
-          p: 2,
+          bgcolor: "#ffffff",
+          borderBottom: "1px solid #E5E5E5",
+          p: 2.5,
           display: "flex",
           alignItems: "center",
           gap: 2,
-          borderBottom: 1,
-          borderColor: "divider",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          color: "white",
         }}
       >
-        <Avatar
-          sx={{
-            bgcolor: "rgba(255,255,255,0.2)",
-            width: 40,
-            height: 40,
-          }}
-        >
-          <ChatBubble />
-        </Avatar>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" fontWeight="bold">
-            聊天室
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                bgcolor: isConnected ? "#10b981" : "#ef4444",
-              }}
-            />
-            <Typography variant="caption">
-              {isConnected ? "已连接" : "未连接"}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* 当前房间信息 */}
-      {currentRoom && (
         <Box
           sx={{
-            p: 2,
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-            当前房间
-          </Typography>
-          <Typography variant="subtitle1" fontWeight="bold">
-            {currentRoom.name}
-          </Typography>
-          {currentRoom.description && (
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-              {currentRoom.description}
-            </Typography>
-          )}
-        </Box>
-      )}
+          <Avatar
+            sx={{
+              bgcolor: "#07C160",
+              width: 40,
+              height: 40,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.05)",
+                bgcolor: "#06A050",
+              },
+            }}
+          >
+            <ChatBubble sx={{ fontSize: 20, color: "white" }} />
+          </Avatar>
 
-      {/* WebSocket连接状态 */}
-      <Box sx={{ p: 2 }}>
-        <ConnectionStatus variant="compact" />
+          {/* 连接状态指示器 */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: -1,
+              right: -1,
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              bgcolor: isConnected ? "#10b981" : "#ef4444",
+              border: "2px solid white",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+            }}
+          />
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              fontSize: "1rem",
+              color: "#191919",
+              mb: 0.5,
+            }}
+          >
+            聊天室
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: isConnected ? "#10b981" : "#ef4444",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+            }}
+          >
+            {isConnected ? "● 在线" : "● 离线"}
+          </Typography>
+        </Box>
       </Box>
 
-      {/* 聊天室列表 */}
-      <Box sx={{ flex: 1, overflow: "hidden" }}>
-        <ChatRoomList />
+      {/* 聊天室列表区域 */}
+      <Box
+        sx={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          px: 0,
+        }}
+      >
+        {/* 列表标题 */}
+        <Box sx={{ px: 2, py: 1, mb: 0.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#888888",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              letterSpacing: "0.3px",
+            }}
+          >
+            聊天室
+          </Typography>
+        </Box>
+
+        {/* 列表内容 */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            px: 1,
+            "&::-webkit-scrollbar": {
+              width: "4px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "transparent",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#E0E0E0",
+              borderRadius: "2px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#BDBDBD",
+            },
+          }}
+        >
+          <ChatRoomList />
+        </Box>
       </Box>
     </Box>
   );
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      {/* 顶部应用栏 */}
+      {/* 顶部应用栏 - 整合用户信息和导航 */}
       <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { md: `${DRAWER_WIDTH}px` },
-          zIndex: theme.zIndex.drawer + 1,
+          bgcolor: "background.paper",
+          color: "text.primary",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
-        <Toolbar>
-          {/* 移动端菜单按钮 */}
+        <Toolbar sx={{ minHeight: "64px !important", px: 3 }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label="打开导航"
             edge="start"
             onClick={handleDrawerToggle}
             sx={{ mr: 2, display: { md: "none" } }}
@@ -192,44 +240,84 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <MenuIcon />
           </IconButton>
 
-          {/* 标题区域 */}
+          {/* 当前房间信息 - 移动到顶部栏 */}
           <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography variant="h6" noWrap component="div">
-              {currentRoom ? currentRoom.name : "聊天应用"}
-            </Typography>
-            {currentRoom && (
-              <Chip
-                size="small"
-                label={isConnected ? "在线" : "离线"}
-                color={isConnected ? "success" : "error"}
-                variant="outlined"
-                sx={{ color: "white", borderColor: "rgba(255,255,255,0.5)" }}
-              />
+            {currentRoom ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "#07C160",
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "1.1rem",
+                    color: "text.primary",
+                  }}
+                >
+                  {currentRoom.name}
+                </Typography>
+                {currentRoom.description && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontSize: "0.875rem",
+                      ml: 1,
+                    }}
+                  >
+                    {currentRoom.description}
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "1.1rem",
+                  color: "text.secondary",
+                }}
+              >
+                选择一个聊天室开始对话
+              </Typography>
             )}
           </Box>
 
-          {/* 用户菜单 */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="body2"
-              sx={{ display: { xs: "none", sm: "block" } }}
-            >
-              {user?.username}
-            </Typography>
+          {/* 用户菜单 - 整合到右侧 */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {/* 连接状态指示 */}
+            <Chip
+              size="small"
+              label={isConnected ? "在线" : "离线"}
+              color={isConnected ? "success" : "error"}
+              variant="outlined"
+              sx={{
+                fontSize: "0.75rem",
+                height: 24,
+                "& .MuiChip-label": {
+                  px: 1,
+                },
+              }}
+            />
+
             <Tooltip title="用户菜单">
               <IconButton
                 size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
+                aria-label="用户菜单"
+                aria-controls="user-menu"
                 aria-haspopup="true"
                 onClick={handleMenuOpen}
+                color="inherit"
                 sx={{
                   p: 0.5,
-                  border: 2,
-                  borderColor: "rgba(255,255,255,0.3)",
                   "&:hover": {
-                    borderColor: "rgba(255,255,255,0.8)",
-                    bgcolor: "rgba(255,255,255,0.1)",
+                    bgcolor: "action.hover",
                   },
                 }}
               >
@@ -237,15 +325,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   sx={{
                     width: 36,
                     height: 36,
-                    bgcolor: "rgba(255,255,255,0.9)",
-                    color: "primary.main",
-                    fontSize: "1rem",
-                    fontWeight: "bold",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    border: "2px solid rgba(255,255,255,0.2)",
+                    bgcolor: "primary.main",
+                    fontSize: "0.875rem",
                   }}
                 >
-                  {user?.username?.charAt(0).toUpperCase()}
+                  {user?.username?.charAt(0).toUpperCase() || "U"}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -255,69 +339,65 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       {/* 用户菜单 */}
       <Menu
-        id="menu-appbar"
+        id="user-menu"
         anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        onClick={handleMenuClose}
         PaperProps={{
+          elevation: 3,
           sx: {
-            mt: 1,
+            overflow: "visible",
+            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.1))",
+            mt: 1.5,
             minWidth: 200,
-            borderRadius: 2,
+            "& .MuiAvatar-root": {
+              width: 32,
+              height: 32,
+              ml: -0.5,
+              mr: 1,
+            },
+            "&:before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: 0,
+              right: 14,
+              width: 10,
+              height: 10,
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
+              zIndex: 0,
+            },
           },
         }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        {/* 用户信息 */}
-        <Box sx={{ px: 2, py: 1 }}>
-          <Typography variant="subtitle2" fontWeight="bold">
-            {user?.username}
+        <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            {user?.username || "用户"}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {user?.email || "聊天用户"}
+          <Typography variant="body2" color="text.secondary">
+            {user?.email || ""}
           </Typography>
         </Box>
-        <Divider />
 
-        {/* 菜单项 */}
-        <MenuItem onClick={handleMenuClose}>
-          <AccountCircle sx={{ mr: 2 }} />
-          个人资料
+        <MenuItem onClick={handleUserManagement}>
+          <People sx={{ mr: 2, fontSize: 20 }} />
+          用户管理
         </MenuItem>
+
         <MenuItem onClick={handleFileManagement}>
-          <Folder sx={{ mr: 2 }} />
+          <Folder sx={{ mr: 2, fontSize: 20 }} />
           文件管理
         </MenuItem>
-        {user?.role === "admin" && (
-          <MenuItem onClick={handleUserManagement}>
-            <People sx={{ mr: 2 }} />
-            用户管理
-          </MenuItem>
-        )}
-        <MenuItem onClick={handleMenuClose}>
-          <Settings sx={{ mr: 2 }} />
-          设置
-        </MenuItem>
+
         <Divider />
-        <MenuItem
-          onClick={handleLogout}
-          sx={{ color: "error.main" }}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <CircularProgress size={16} sx={{ mr: 2 }} />
-          ) : (
-            <Logout sx={{ mr: 2 }} />
-          )}
-          {isLoading ? "正在退出..." : "退出登录"}
+
+        <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
+          <Logout sx={{ mr: 2, fontSize: 20 }} />
+          退出登录
         </MenuItem>
       </Menu>
 
