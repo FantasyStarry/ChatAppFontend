@@ -62,10 +62,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const iconProps = { sx: { fontSize: 20 } };
     
     if (file.type.startsWith("image/")) 
-      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#07C160' }} />;
-    if (file.type === "application/pdf" || file.type.startsWith("text/"))
-      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#2196f3' }} />;
-    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
+      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#00C853' }} />; // 鲜艳绿色
+    if (file.type === "application/pdf")
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#D32F2F' }} />; // Adobe红色
+    if (file.type.startsWith("text/") || file.type.includes("document") || file.type.includes("word"))
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#1976D2' }} />; // Word蓝色
+    if (file.type.includes("spreadsheet") || file.type.includes("excel"))
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#0F7B0F' }} />; // Excel绿色
+    if (file.type.includes("presentation") || file.type.includes("powerpoint"))
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#D24726' }} />; // PowerPoint橙红色
+    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: '#616161' }} />; // 深灰色
   };
 
   // 格式化文件大小

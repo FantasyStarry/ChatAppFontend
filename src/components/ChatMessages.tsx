@@ -941,9 +941,9 @@ const ChatMessages: React.FC = () => {
       </Box>
 
       {/* 输入区域和文件管理整合 */}
-      <Box 
-        sx={{ 
-          borderTop: 1, 
+      <Box
+        sx={{
+          borderTop: 1,
           borderColor: "divider",
           bgcolor: "background.paper",
         }}
@@ -1007,9 +1007,7 @@ const ChatMessages: React.FC = () => {
               borderColor: showUploadArea ? "#07C160" : "#E0E0E0",
               color: showUploadArea ? "white" : "text.primary",
               "&:hover": {
-                bgcolor: showUploadArea
-                  ? "#06A050"
-                  : "rgba(7, 193, 96, 0.04)",
+                bgcolor: showUploadArea ? "#06A050" : "rgba(7, 193, 96, 0.04)",
                 borderColor: "#07C160",
                 transform: "translateY(-1px)",
                 boxShadow: "0 4px 12px rgba(7, 193, 96, 0.2)",

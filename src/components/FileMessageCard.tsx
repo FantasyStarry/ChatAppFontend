@@ -46,11 +46,11 @@ const getFileIcon = (contentType: string, fileName: string) => {
   const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
   if (type.startsWith("image/")) {
-    return <ImageIcon sx={{ color: "#4CAF50" }} />;
+    return <ImageIcon sx={{ color: "#00C853" }} />; // 鲜艳绿色
   }
 
   if (type === "application/pdf") {
-    return <PdfIcon sx={{ color: "#F44336" }} />;
+    return <PdfIcon sx={{ color: "#D32F2F" }} />; // Adobe红色
   }
 
   if (
@@ -59,7 +59,7 @@ const getFileIcon = (contentType: string, fileName: string) => {
     type.includes("text") ||
     ["doc", "docx", "txt", "rtf"].includes(extension)
   ) {
-    return <DocumentIcon sx={{ color: "#2196F3" }} />;
+    return <DocumentIcon sx={{ color: "#1976D2" }} />; // Word蓝色
   }
 
   if (
@@ -67,7 +67,7 @@ const getFileIcon = (contentType: string, fileName: string) => {
     type.includes("excel") ||
     ["xls", "xlsx", "csv"].includes(extension)
   ) {
-    return <DocumentIcon sx={{ color: "#4CAF50" }} />;
+    return <DocumentIcon sx={{ color: "#0F7B0F" }} />; // Excel绿色
   }
 
   if (
@@ -75,15 +75,15 @@ const getFileIcon = (contentType: string, fileName: string) => {
     type.includes("powerpoint") ||
     ["ppt", "pptx"].includes(extension)
   ) {
-    return <DocumentIcon sx={{ color: "#FF9800" }} />;
+    return <DocumentIcon sx={{ color: "#D24726" }} />; // PowerPoint橙红色
   }
 
   if (type.startsWith("video/")) {
-    return <VideoIcon sx={{ color: "#9C27B0" }} />;
+    return <VideoIcon sx={{ color: "#7B1FA2" }} />; // 深紫色
   }
 
   if (type.startsWith("audio/")) {
-    return <AudioIcon sx={{ color: "#FF5722" }} />;
+    return <AudioIcon sx={{ color: "#FF6F00" }} />; // 鲜艳橙色
   }
 
   if (
@@ -92,10 +92,10 @@ const getFileIcon = (contentType: string, fileName: string) => {
     type.includes("7z") ||
     ["zip", "rar", "7z", "tar", "gz"].includes(extension)
   ) {
-    return <ArchiveIcon sx={{ color: "#795548" }} />;
+    return <ArchiveIcon sx={{ color: "#5D4037" }} />; // 深棕色
   }
 
-  return <FileIcon sx={{ color: "#757575" }} />;
+  return <FileIcon sx={{ color: "#616161" }} />; // 深灰色
 };
 
 // 获取文件类型标签
@@ -156,7 +156,7 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
       // apiService.downloadFile 已经处理了文件下载逻辑
       await apiService.downloadFile(fileId);
     } catch (error) {
-      console.error('下载文件失败:', error);
+      console.error("下载文件失败:", error);
     } finally {
       setIsDownloading(false);
     }
@@ -165,29 +165,33 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
   return (
     <Box
       sx={{
-          maxWidth: 280,
-          minWidth: 240,
-          backgroundColor: "#FFFFFF",
-          borderRadius: "12px",
-          border: "1px solid #E5E5E5",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-          transition: "all 0.2s ease-in-out",
-          cursor: fileId ? "pointer" : "default",
-          overflow: "hidden",
-          position: "relative",
-          "&:hover": fileId ? {
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-            transform: "translateY(-1px)",
-            "& .download-button": {
-              backgroundColor: "#06AD56",
-              transform: "scale(1.1)",
-            },
-          } : {},
-          "&:active": fileId ? {
-            transform: "translateY(0px)",
-            boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
-          } : {},
-        }}
+        maxWidth: 280,
+        minWidth: 240,
+        backgroundColor: "#FFFFFF",
+        borderRadius: "12px",
+        border: "1px solid #E5E5E5",
+        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+        transition: "all 0.2s ease-in-out",
+        cursor: fileId ? "pointer" : "default",
+        overflow: "hidden",
+        position: "relative",
+        "&:hover": fileId
+          ? {
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+              transform: "translateY(-1px)",
+              "& .download-button": {
+                backgroundColor: "#06AD56",
+                transform: "scale(1.1)",
+              },
+            }
+          : {},
+        "&:active": fileId
+          ? {
+              transform: "translateY(0px)",
+              boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
+            }
+          : {},
+      }}
       onClick={handleCardClick}
     >
       {/* 文件头部区域 */}
@@ -214,10 +218,13 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
           }}
         >
           {React.cloneElement(getFileIcon(contentType, fileName), {
-            sx: { fontSize: 24 },
+            sx: { 
+              fontSize: 24,
+              ...getFileIcon(contentType, fileName).props.sx 
+            },
           })}
         </Box>
-        
+
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Tooltip title={fileName} placement="top">
             <Typography
@@ -236,7 +243,7 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
               {fileName}
             </Typography>
           </Tooltip>
-          
+
           <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Typography
               variant="caption"
@@ -248,7 +255,7 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
             >
               {formatFileSize(fileSize)}
             </Typography>
-            
+
             {getFileTypeChip(contentType, fileName)}
           </Box>
         </Box>
@@ -285,42 +292,42 @@ const FileMessageCard: React.FC<FileMessageCardProps> = ({
         )}
 
         {fileId && (
-           <Tooltip title="下载文件" placement="top">
-             <IconButton
-               className="download-button"
-               onClick={(e) => {
-                 e.stopPropagation();
-                 handleDownload();
-               }}
-               disabled={isDownloading}
-               sx={{
-                 width: 32,
-                 height: 32,
-                 backgroundColor: "#07C160",
-                 color: "white",
-                 transition: "all 0.2s ease-in-out",
-                 "&:hover": {
-                   backgroundColor: "#06AD56",
-                   transform: "scale(1.05)",
-                 },
-                 "&:disabled": {
-                   backgroundColor: "#CCCCCC",
-                   color: "white",
-                   cursor: "not-allowed",
-                 },
-                 "&:active": {
-                   transform: "scale(0.95)",
-                 },
-               }}
-             >
-               {isDownloading ? (
-                 <CircularProgress size={16} sx={{ color: "white" }} />
-               ) : (
-                 <DownloadIcon sx={{ fontSize: "16px" }} />
-               )}
-             </IconButton>
-           </Tooltip>
-         )}
+          <Tooltip title="下载文件" placement="top">
+            <IconButton
+              className="download-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload();
+              }}
+              disabled={isDownloading}
+              sx={{
+                width: 32,
+                height: 32,
+                backgroundColor: "#07C160",
+                color: "white",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  backgroundColor: "#06AD56",
+                  transform: "scale(1.05)",
+                },
+                "&:disabled": {
+                  backgroundColor: "#CCCCCC",
+                  color: "white",
+                  cursor: "not-allowed",
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                },
+              }}
+            >
+              {isDownloading ? (
+                <CircularProgress size={16} sx={{ color: "white" }} />
+              ) : (
+                <DownloadIcon sx={{ fontSize: "16px" }} />
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
     </Box>
   );

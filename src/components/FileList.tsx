@@ -110,24 +110,37 @@ const FileList: React.FC<FileListProps> = ({
     const iconProps = { sx: { fontSize: 20 } };
 
     if (file.content_type.startsWith("image/")) {
-      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#07C160' }} />;
+      return <ImageIcon {...iconProps} sx={{ ...iconProps.sx, color: '#00C853' }} />; // 鲜艳绿色
     }
     if (file.content_type === "application/pdf") {
-      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#f44336' }} />;
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#D32F2F' }} />; // Adobe红色
     }
     if (
       file.content_type.startsWith("text/") ||
-      file.content_type.includes("document")
+      file.content_type.includes("document") ||
+      file.content_type.includes("word")
     ) {
-      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#2196f3' }} />;
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#1976D2' }} />; // Word蓝色
+    }
+    if (
+      file.content_type.includes("spreadsheet") ||
+      file.content_type.includes("excel")
+    ) {
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#0F7B0F' }} />; // Excel绿色
+    }
+    if (
+      file.content_type.includes("presentation") ||
+      file.content_type.includes("powerpoint")
+    ) {
+      return <Description {...iconProps} sx={{ ...iconProps.sx, color: '#D24726' }} />; // PowerPoint橙红色
     }
     if (
       file.content_type.includes("zip") ||
       file.content_type.includes("rar")
     ) {
-      return <FolderZip {...iconProps} sx={{ ...iconProps.sx, color: '#ff9800' }} />;
+      return <FolderZip {...iconProps} sx={{ ...iconProps.sx, color: '#5D4037' }} />; // 深棕色
     }
-    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
+    return <InsertDriveFile {...iconProps} sx={{ ...iconProps.sx, color: '#616161' }} />; // 深灰色
   };
 
   // 获取文件类型标签

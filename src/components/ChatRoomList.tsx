@@ -24,13 +24,8 @@ import { useChat } from "../hooks/useChat";
 import type { ChatRoom, CreateChatRoomRequest } from "../types";
 
 const ChatRoomList: React.FC = () => {
-  const {
-    rooms,
-    currentRoom,
-    setCurrentRoom,
-    isLoading,
-    createRoom,
-  } = useChat();
+  const { rooms, currentRoom, setCurrentRoom, isLoading, createRoom } =
+    useChat();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newRoomData, setNewRoomData] = useState<CreateChatRoomRequest>({
@@ -77,7 +72,6 @@ const ChatRoomList: React.FC = () => {
       setCreating(false);
     }
   };
-
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -137,7 +131,9 @@ const ChatRoomList: React.FC = () => {
               height: "200px",
             }}
           >
-            <Chat sx={{ fontSize: 48, opacity: 0.3, mb: 2, color: "#CCCCCC" }} />
+            <Chat
+              sx={{ fontSize: 48, opacity: 0.3, mb: 2, color: "#CCCCCC" }}
+            />
             <Typography variant="body2" sx={{ mb: 1, color: "#888888" }}>
               暂无聊天室
             </Typography>
@@ -201,8 +197,10 @@ const ChatRoomList: React.FC = () => {
                     >
                       <Avatar
                         sx={{
-                          bgcolor: currentRoom?.id === room.id ? "#07C160" : "#F0F0F0",
-                          color: currentRoom?.id === room.id ? "white" : "#666666",
+                          bgcolor:
+                            currentRoom?.id === room.id ? "#07C160" : "#F0F0F0",
+                          color:
+                            currentRoom?.id === room.id ? "white" : "#666666",
                           width: 44,
                           height: 44,
                           fontWeight: 700,
@@ -240,8 +238,16 @@ const ChatRoomList: React.FC = () => {
                           {room.name}
                         </Typography>
                         {room.lastMessage && (
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                            <AccessTime sx={{ fontSize: 12, color: "#AAAAAA" }} />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <AccessTime
+                              sx={{ fontSize: 12, color: "#AAAAAA" }}
+                            />
                             <Typography
                               variant="caption"
                               sx={{
@@ -350,7 +356,7 @@ const ChatRoomList: React.FC = () => {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          sx: { 
+          sx: {
             borderRadius: 3,
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
           },
@@ -363,10 +369,10 @@ const ChatRoomList: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 2, 
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2,
                 borderRadius: 2,
                 bgcolor: "rgba(244, 67, 54, 0.08)",
                 border: "1px solid rgba(244, 67, 54, 0.2)",
@@ -386,7 +392,7 @@ const ChatRoomList: React.FC = () => {
               setNewRoomData((prev) => ({ ...prev, name: e.target.value }))
             }
             disabled={creating}
-            sx={{ 
+            sx={{
               mb: 2,
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
